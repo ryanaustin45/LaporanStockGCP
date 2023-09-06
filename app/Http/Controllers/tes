@@ -1,0 +1,68 @@
+     /*memasukan nilai harga pada bahan jadi bom dapur racik dari penjunmlahan bahan baku dapur racik */
+     $dprrckbomhargabarang = Dprrckbom::select(
+     'dprrckboms.KODE_BARANG',
+     Dprrckbom::raw('sum(dprrckboms.Harga) as Harga1')
+     )->groupBy('dprrckboms.KODE_BARANG')->get();
+     foreach ($dprrckbomhargabarang as $dprrckbomhargabarangs) {
+     Dprrckbom::where('KODE_BARANG', $dprrckbomhargabarangs->KODE_BARANG)
+     ->update(['dprrckboms.HargaBarang' => $dprrckbomhargabarangs->Harga1]);
+     }
+
+     $dprbomhargabarang = Dprbom::select(
+     'dprboms.KODE_BARANG',
+     Dprbom::raw('sum(dprboms.Harga) as Harga1')
+     )->groupBy('dprboms.KODE_BARANG')->get();
+
+     /*memasukan nilai harga pada bahan jadi bom dapur pusat dari penjunmlahan bahan baku dapur pusat */
+     foreach ($dprbomhargabarang as $dprbomhargabarangs) {
+     Dprbom::where('KODE_BARANG', $dprbomhargabarangs->KODE_BARANG)->update(['dprboms.HargaBarang' => $dprbomhargabarangs->Harga1]);
+     }
+
+
+     /* select untuk memasukan nilai harga pada item dari dapur racik*/
+     $items1123 = Item::select('dprrckboms.NAMA_BARANG', 'dprrckboms.HargaBarang')->join(
+     'dprrckboms',
+     'items.KODE_DESKRIPSI_BARANG_SAGE',
+     '=',
+     'dprrckboms.NAMA_BARANG'
+     )->get();
+
+     /*memasukan nilai harga pada item dari dapur racik */
+     foreach ($items1123 as $itemss1123) {
+     Item::where('KODE_DESKRIPSI_BARANG_SAGE', $itemss1123->NAMA_BARANG)->update(['items.Harga' => $itemss1123->HargaBarang]);
+     }
+
+     /* select untuk memasukan nilai harga pada item dari dapur pusat */
+     $items11234 = Item::select('dprboms.NAMA_BARANG', 'dprboms.HargaBarang')->join(
+     'dprboms',
+     'items.KODE_DESKRIPSI_BARANG_SAGE',
+     '=',
+     'dprboms.NAMA_BARANG'
+     )->get();
+
+     /*memasukan nilai harga pada item dari dapur pusat */
+     foreach ($items11234 as $itemss11234) {
+     Item::where('KODE_DESKRIPSI_BARANG_SAGE', $itemss11234->NAMA_BARANG)->update(['items.Harga' => $itemss11234->HargaBarang]);
+     }
+
+
+     $bom1234 = Bom::select(
+     'boms.NAMA_BAHAN',
+     'items.Harga'
+     )->leftJoin('items', 'items.KODE_DESKRIPSI_BARANG_SAGE', '=', 'boms.NAMA_BARANG')
+     ->get();
+
+     /*memasukan nilai harga pada bahan baku bom dapur pusat dari bahan jadi dapur racik */
+     foreach ($bom1234 as $bom1234s) {
+     Bom::where('NAMA_BAHAN', $bom1234s->NAMA_BAHAN)->update(['boms.Harga' => $bom1234s->Harga]);
+     }
+
+     $bom1234sum = Bom::select(
+     'boms.KODE_BARANG',
+     Bom::raw('sum(boms.Harga) as Harga1')
+     )->groupBy('boms.KODE_BARANG')->get();
+
+     /*memasukan nilai harga pada bahan jadi bom dapur pusat dari penjunmlahan bahan baku dapur pusat */
+     foreach ($bom1234sum as $bom1234sums) {
+     Bom::where('KODE_BARANG', $bom1234sums->KODE_BARANG)->update(['boms.HargaBarang' => $bom1234sums->Harga1]);
+     }
