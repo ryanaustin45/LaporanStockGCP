@@ -38,7 +38,7 @@
                         <input type="submit" value="CARI">
                     </form>
 
-                    <table id="example1" class="table table-bordered ">
+                    <table id="example1" class="table table-bordered table-responsive ">
                         <thead>
                             <tr>
                                 <th colspan="3"> </th>
