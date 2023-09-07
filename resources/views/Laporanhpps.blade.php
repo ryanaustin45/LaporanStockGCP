@@ -6,7 +6,6 @@
     <style>
         .tableFixHead {
             overflow: auto;
-            height: 500px;
         }
 
         .tableFixHead thead {
@@ -58,7 +57,7 @@
 
 
                     <div class="tableFixHead">
-                        <table class="table table-bordered">
+                        <table id="example1" class="table table-bordered">
                             <thead>
                                 <tr>
                                     <th>No</th>
@@ -75,26 +74,30 @@
                                     <th>Margin</th>
                                 </tr>
                             </thead>
-                            @foreach($penjualanss as $Item)
-                            <tr>
-                                <td class="counterCell"></td>
-                                <td>{{ $Item->TANGGAL }}</td>
-                                <td>{{ $Item->KODE_OUTLET }}</td>
-                                <td>{{ $Item->Outlet }}</td>
-                                <td>{{ $Item->KODE_BARANG }}</td>
-                                <td>{{ $Item->Barang }}</td>
-                                <td>{{ $Item->Banyak }}</td>
-                                <td>{{ $Item->Jumlah }}</td>
-                                <td>{{ $Item->Revenue }}</td>
-                                <td>{{ $Item->COGS }}</td>
-                                <td>{{ $Item->Profit }}</td>
-                                <td>{{ $Item->Margin }}</td>
+                            <tbody>
+                                @foreach($penjualanss as $Item)
+                                <tr>
+                                    <td class="counterCell"></td>
+                                    <td>{{ $Item->TANGGAL }}</td>
+                                    <td>{{ $Item->KODE_OUTLET }}</td>
+                                    <td>{{ $Item->Outlet }}</td>
+                                    <td>{{ $Item->KODE_BARANG }}</td>
+                                    <td>{{ $Item->Barang }}</td>
+                                    <td>{{ $Item->Banyak }}</td>
+                                    <td>{{ $Item->Jumlah }}</td>
+                                    <td>{{ $Item->Revenue }}</td>
+                                    <td>{{ $Item->COGS }}</td>
+                                    <td>{{ $Item->Profit }}</td>
+                                    <td>{{ $Item->Margin }}</td>
 
-                            </tr>
-                            @endforeach
+                                </tr>
+                                @endforeach
+                            </tbody>
                         </table>
                     </div>
+                    <?php /* 
                     <a class="btn btn-danger float-left" href="{{ route('hpp.export') }}">Export Laporan Excel</a>
+                    */ ?>
 
                 </div>
             </div>
