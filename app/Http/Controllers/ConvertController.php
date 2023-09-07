@@ -142,11 +142,11 @@ class ConvertController extends Controller
                 Pembelian::raw('(pembelians.JUMLAH / ((pembelians.BANYAK *items. RUMUS_Untuk_Purchase) / items.RUMUS_untuk_BOM))as HARGA'),
                 'pembelians.JUMLAH'
             )->join('items', 'pembelians.KD_BRG', '=', 'items.KODE_BARANG_PURCHASING')->get();
-
+            $data = [];
             /* masuk kedalam database convert pembelian dari pembelian */
             foreach ($pembelians1 as $pembelians12) {
                 if ($pembelians12->QUANTITY != 0) {
-                    Convertpembelian::create([
+                    $data[] = [
                         'TANGGAL' => $pembelians12->TANGGAL,
                         'KODE' => $pembelians12->KD_CUS,
                         'NAMA' => $pembelians12->NAMAPELANGGAN,
@@ -157,8 +157,12 @@ class ConvertController extends Controller
                         'HARGA' => $pembelians12->HARGA,
                         'JUMLAH' => $pembelians12->JUMLAH
 
-                    ]);
+                    ];
                 }
+            }
+            $chunksdata = array_chunk($data, 1000000000);
+            foreach ($chunksdata as $chunks) {
+                Convertpembelian::insert($chunks);
             }
 
             //bisa dihapus sisain insert buat item doang
@@ -333,11 +337,12 @@ class ConvertController extends Controller
                     'items.Harga'
                 )->groupBy('penerimaans.KD_BHN', 'penerimaans.PENERIMA', 'penerimaans.DARI', 'penerimaans.TANGGAL')->get();
 
+            $data = [];
 
             // menjadi convert penerimaan 
             foreach ($penerimaanss as $penerimaansss) {
                 if ($penerimaansss->QUANTITY != 0) {
-                    Convertpenerimaan::create([
+                    $data[] = [
                         'TANGGAL' => $penerimaansss->TANGGAL,
                         'PENERIMA' => $penerimaansss->PENERIMA,
                         'NAMAPENERIMA' => $penerimaansss->ALAMAT,
@@ -349,8 +354,12 @@ class ConvertController extends Controller
                         'QUANTITY' => $penerimaansss->QUANTITY,
                         'HARGA' => $penerimaansss->Harga,
                         'JUMLAH' => $penerimaansss->QUANTITY * $penerimaansss->Harga
-                    ]);
+                    ];
                 }
+            }
+            $chunksdata = array_chunk($data, 1000000000);
+            foreach ($chunksdata as $chunks) {
+                Convertpenerimaan::insert($chunks);
             }
             // dari dimasukan ke pengiriman
             $PenerimanSaldo = Convertpenerimaan::select(
@@ -634,9 +643,10 @@ class ConvertController extends Controller
                 Penjualan::raw('penjualans.Jumlah / penjualans.Banyak AS HARGA'),
             )->get();
 
+            $data = [];
             foreach ($Boms1 as $Boms11) {
                 if ($Boms11->QUANTITY != 0) {
-                    Convertbom::create([
+                    $data[] = [
                         'TANGGAL' => $Boms11->TANGGAL,
                         'KODE' => $Boms11->KODE_OUTLET,
                         'NAMA' => $Boms11->Outlet,
@@ -646,8 +656,12 @@ class ConvertController extends Controller
                         'QUANTITY' => $Boms11->QUANTITY,
                         'HARGA' => $Boms11->HARGA,
                         'JUMLAH' => $Boms11->QUANTITY * $Boms11->HARGA
-                    ]);
+                    ];
                 }
+            }
+            $chunksdata = array_chunk($data, 1000000000);
+            foreach ($chunksdata as $chunks) {
+                Convertbom::insert($chunks);
             }
             $bomconvertsaldo = Convertbom::select(
                 'convertboms.TANGGAL',
