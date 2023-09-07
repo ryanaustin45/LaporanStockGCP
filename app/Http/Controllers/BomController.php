@@ -1038,7 +1038,7 @@ class BomController extends Controller
             }
 
 
-            $penjualanss = Laporanhpp::get();
+            $penjualanss = Laporanhpp::whereDate('TANGGAL', '=', $Tanggal)->get();
             return view('Laporanhpps', compact('penjualanss'));
         }
 
