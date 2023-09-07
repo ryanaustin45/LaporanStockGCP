@@ -442,7 +442,9 @@ class BomController extends Controller
                     ->update([
 
                         'SAwalUnit' => Laporanakhir::raw('(SAkhirUnit -(Pengiriman_Price + Bom_Price)) - SAkhirUnit'),
-                        'SAwalPrice' => Laporanakhir::raw('(SAkhirPrice - ((SAkhirQuantity * IFNULL( Pengiriman_Price, 0 )) +( SAkhirQuantity * IFNULL( Bom_Price, 0 )))) - SAkhirPrice')
+                        'SAwalPrice' => Laporanakhir::raw('(SAkhirPrice - ((SAkhirQuantity * IFNULL( Pengiriman_Price, 0 )) +( SAkhirQuantity * IFNULL( Bom_Price, 0 )))) - SAkhirPrice'),
+                        'SAwalQuantity' => Laporanakhir::raw('IFNULL(SAwalPrice / NULLIF( SAwalUnit, 0 ), 0)')
+
                     ]);
             }
 
@@ -595,6 +597,25 @@ class BomController extends Controller
                         'SAkhirUnit' => Laporanakhir::raw('(TransferIn_Unit - TransferOut_Unit) - TransferIn_Unit '),
                         'SAkhirQuantity' => Laporanakhir::raw('TransferIn_Quantity '),
                         'SAkhirPrice' => Laporanakhir::raw('SAkhirUnit*TransferIn_Quantity')
+                    ]);
+            }
+
+            $UpdateLaporanharian = Laporanakhir::get();
+            foreach ($UpdateLaporanharian as $UpdateLaporanharians) {
+                Laporanakhir::whereDate('TANGGAL', '=', $date)->where('KODE', $UpdateLaporanharians->KODE)->where('KODE_BARANG_SAGE', $UpdateLaporanharians->KODE_BARANG_SAGE)
+                    ->update([
+
+                        'SAwalUnit' => $UpdateLaporanharians->SAwalUnit,
+                        'SAwalPrice' => $UpdateLaporanharians->SAwalPrice,
+                        'SAwalQuantity' => $UpdateLaporanharians->SAwalQuantity,
+
+                        'TransferIn_Unit' => $UpdateLaporanharians->TransferIn_Unit,
+                        'TransferIn_Price' => $UpdateLaporanharians->TransferIn_Price,
+                        'TransferIn_Quantity' => $UpdateLaporanharians->TransferIn_Quantity,
+
+                        'SAkhirUnit' => $UpdateLaporanharians->SAkhirUnit,
+                        'SAkhirQuantity' => $UpdateLaporanharians->SAkhirQuantity,
+                        'SAkhirPrice' => $UpdateLaporanharians->SAkhirPrice
                     ]);
             }
 
@@ -839,8 +860,6 @@ class BomController extends Controller
         if (Auth::check()) {
             // menangkap data pencarian
             $Tanggal = $request->date;
-
-            Laporanhpp::truncate();
             Convertbom::truncate();
 
             /*
