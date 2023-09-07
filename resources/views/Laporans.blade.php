@@ -6,7 +6,6 @@
     <style>
         .tableFixHead {
             overflow: auto;
-            height: 500px;
         }
 
         .tableFixHead thead {
@@ -61,7 +60,7 @@
                     </form>
                     <div class="tableFixHead">
 
-                        <table class="table table-bordered">
+                        <table id="example1" class="table table-bordered ">
                             <thead>
                                 <tr>
                                     <th colspan="4"> </th>
@@ -110,46 +109,51 @@
                                     <th>Amount</th>
                                 </tr>
                             </thead>
+                            <tbody>
 
-                            @foreach($laporanakhirview as $Item)
-                            <tr>
-                                <td class="counterCell"></td>
-                                <td>{{ $Item->KODE }}</td>
-                                <td>{{ $Item->KODE_DESKRIPSI_BARANG_SAGE }}</td>
-                                <td>{{ $Item->STOKING_UNIT_BOM }}</td>
-                                <td>{{ $Item->SAwalUnit }}</td>
-                                <td>{{ $Item->SAwalQuantity }}</td>
-                                <td>{{ $Item->SAwalPrice }}</td>
-                                <td>{{ $Item->Pembelian_Unit }}</td>
-                                <td>{{ $Item->Pembelian_Quantity }}</td>
-                                <td>{{ $Item->Pembelian_Price }}</td>
-                                <td>{{ $Item->Penerimaan_Unit }}</td>
-                                <td>{{ $Item->Penerimaan_Quantity }}</td>
-                                <td>{{ $Item->Penerimaan_Price }}</td>
-                                <td>{{ $Item->TransferIn_Unit }}</td>
-                                <td>{{ $Item->TransferIn_Quantity }}</td>
-                                <td>{{ $Item->TransferIn_Price }}</td>
-                                <td>{{ $Item->Pengiriman_Unit }}</td>
-                                <td>{{ $Item->Pengiriman_Quantity }}</td>
-                                <td>{{ $Item->Pengiriman_Price }}</td>
-                                <td>{{ $Item->Bom_Unit }}</td>
-                                <td>{{ $Item->Bom_Quantity }}</td>
-                                <td>{{ $Item->Bom_Price }}</td>
-                                <td>{{ $Item->TransferOut_Unit }}</td>
-                                <td>{{ $Item->TransferOut_Quantity }}</td>
-                                <td>{{ $Item->TransferOut_Price }}</td>
-                                <td>{{ $Item->BiayaUnit }}</td>
-                                <td>{{ $Item->BiayaQuantity }}</td>
-                                <td>{{ $Item->BiayaPrice }}</td>
-                                <td>{{ $Item->SAkhirUnit }}</td>
-                                <td>{{ $Item->SAkhirQuantity }}</td>
-                                <td>{{ $Item->SAkhirPrice }}</td>
-                            </tr>
-                            @endforeach
+                                @foreach($laporanakhirview as $Item)
+                                <tr>
+                                    <td class="counterCell"></td>
+                                    <td>{{ $Item->KODE }}</td>
+                                    <td>{{ $Item->KODE_DESKRIPSI_BARANG_SAGE }}</td>
+                                    <td>{{ $Item->STOKING_UNIT_BOM }}</td>
+                                    <td>{{ $Item->SAwalUnit }}</td>
+                                    <td>{{ $Item->SAwalQuantity }}</td>
+                                    <td>{{ $Item->SAwalPrice }}</td>
+                                    <td>{{ $Item->Pembelian_Unit }}</td>
+                                    <td>{{ $Item->Pembelian_Quantity }}</td>
+                                    <td>{{ $Item->Pembelian_Price }}</td>
+                                    <td>{{ $Item->Penerimaan_Unit }}</td>
+                                    <td>{{ $Item->Penerimaan_Quantity }}</td>
+                                    <td>{{ $Item->Penerimaan_Price }}</td>
+                                    <td>{{ $Item->TransferIn_Unit }}</td>
+                                    <td>{{ $Item->TransferIn_Quantity }}</td>
+                                    <td>{{ $Item->TransferIn_Price }}</td>
+                                    <td>{{ $Item->Pengiriman_Unit }}</td>
+                                    <td>{{ $Item->Pengiriman_Quantity }}</td>
+                                    <td>{{ $Item->Pengiriman_Price }}</td>
+                                    <td>{{ $Item->Bom_Unit }}</td>
+                                    <td>{{ $Item->Bom_Quantity }}</td>
+                                    <td>{{ $Item->Bom_Price }}</td>
+                                    <td>{{ $Item->TransferOut_Unit }}</td>
+                                    <td>{{ $Item->TransferOut_Quantity }}</td>
+                                    <td>{{ $Item->TransferOut_Price }}</td>
+                                    <td>{{ $Item->BiayaUnit }}</td>
+                                    <td>{{ $Item->BiayaQuantity }}</td>
+                                    <td>{{ $Item->BiayaPrice }}</td>
+                                    <td>{{ $Item->SAkhirUnit }}</td>
+                                    <td>{{ $Item->SAkhirQuantity }}</td>
+                                    <td>{{ $Item->SAkhirPrice }}</td>
+                                </tr>
+                                @endforeach
+                            <tbody>
+
                         </table>
 
                     </div>
+                    <?php /* 
                     <a class="btn btn-danger float-left " href="{{ route('boms1.export') }}">Export Laporan Excel</a>
+                    */ ?>
                 </div>
             </div>
         </div>
@@ -157,7 +161,6 @@
 
 
     @include('Template.Script')
-
 </body>
 
 </html>
