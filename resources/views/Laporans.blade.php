@@ -3,28 +3,7 @@
 
 <head>
     @include('Template.Head')
-    <style>
-        .tableFixHead {
-            overflow: auto;
-        }
 
-        .tableFixHead thead {
-            position: sticky;
-            top: 0;
-            background: #eee;
-            text-align-last: center;
-        }
-
-        table {
-            border-collapse: collapse;
-            width: 100%;
-        }
-
-        th,
-        td {
-            padding: 8px 16px;
-        }
-    </style>
 </head>
 
 <body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
@@ -58,99 +37,95 @@
                         <input type="text" name="cari" placeholder="Masukan kode Outlet .." value="{{ old('cari') }}">
                         <input type="submit" value="CARI">
                     </form>
-                    <div class="tableFixHead">
 
-                        <table id="example1" class="table table-bordered ">
-                            <thead>
-                                <tr>
-                                    <th colspan="4"> </th>
-                                    <th colspan="3"> Saldo Awal </th>
-                                    <th colspan="3"> Pembelian </th>
-                                    <th colspan="3"> Penerimaan Internal</th>
-                                    <th colspan="3"> Total Transfer IN</th>
-                                    <th colspan="3"> Pengiriman Internal</th>
-                                    <th colspan="3"> Bom </th>
-                                    <th colspan="3"> Total Transfer Out</th>
-                                    <th colspan="3"> Biaya</th>
-                                    <th colspan="3"> Saldo Akhir</th>
+                    <table id="example1" class="table table-bordered ">
+                        <thead>
+                            <tr>
+                                <th colspan="3"> </th>
+                                <th colspan="3"> Saldo Awal </th>
+                                <th colspan="3"> Pembelian </th>
+                                <th colspan="3"> Penerimaan Internal</th>
+                                <th colspan="3"> Total Transfer IN</th>
+                                <th colspan="3"> Pengiriman Internal</th>
+                                <th colspan="3"> Bom </th>
+                                <th colspan="3"> Total Transfer Out</th>
+                                <th colspan="3"> Biaya</th>
+                                <th colspan="3"> Saldo Akhir</th>
 
-                                </tr>
-                                <tr>
-                                    <th>No</th>
-                                    <th>Kode Outlet</th>
-                                    <th>Nama Item</th>
-                                    <th>Satuan</th>
-                                    <th>Quantity</th>
-                                    <th>Price</th>
-                                    <th>Amount</th>
-                                    <th>Quantity</th>
-                                    <th>Price</th>
-                                    <th>Amount</th>
-                                    <th>Quantity</th>
-                                    <th>Price</th>
-                                    <th>Amount</th>
-                                    <th>Quantity</th>
-                                    <th>Price</th>
-                                    <th>Amount</th>
-                                    <th>Quantity</th>
-                                    <th>Price</th>
-                                    <th>Amount</th>
-                                    <th>Quantity</th>
-                                    <th>Price</th>
-                                    <th>Amount</th>
-                                    <th>Quantity</th>
-                                    <th>Price</th>
-                                    <th>Amount</th>
-                                    <th>Quantity</th>
-                                    <th>Price</th>
-                                    <th>Amount</th>
-                                    <th>Quantity</th>
-                                    <th>Price</th>
-                                    <th>Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                            </tr>
+                            <tr>
+                                <th>Kode Outlet</th>
+                                <th>Nama Item</th>
+                                <th>Satuan</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Amount</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Amount</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Amount</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Amount</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Amount</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Amount</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Amount</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Amount</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
 
-                                @foreach($laporanakhirview as $Item)
-                                <tr>
-                                    <td class="counterCell"></td>
-                                    <td>{{ $Item->KODE }}</td>
-                                    <td>{{ $Item->KODE_DESKRIPSI_BARANG_SAGE }}</td>
-                                    <td>{{ $Item->STOKING_UNIT_BOM }}</td>
-                                    <td>{{ $Item->SAwalUnit }}</td>
-                                    <td>{{ $Item->SAwalQuantity }}</td>
-                                    <td>{{ $Item->SAwalPrice }}</td>
-                                    <td>{{ $Item->Pembelian_Unit }}</td>
-                                    <td>{{ $Item->Pembelian_Quantity }}</td>
-                                    <td>{{ $Item->Pembelian_Price }}</td>
-                                    <td>{{ $Item->Penerimaan_Unit }}</td>
-                                    <td>{{ $Item->Penerimaan_Quantity }}</td>
-                                    <td>{{ $Item->Penerimaan_Price }}</td>
-                                    <td>{{ $Item->TransferIn_Unit }}</td>
-                                    <td>{{ $Item->TransferIn_Quantity }}</td>
-                                    <td>{{ $Item->TransferIn_Price }}</td>
-                                    <td>{{ $Item->Pengiriman_Unit }}</td>
-                                    <td>{{ $Item->Pengiriman_Quantity }}</td>
-                                    <td>{{ $Item->Pengiriman_Price }}</td>
-                                    <td>{{ $Item->Bom_Unit }}</td>
-                                    <td>{{ $Item->Bom_Quantity }}</td>
-                                    <td>{{ $Item->Bom_Price }}</td>
-                                    <td>{{ $Item->TransferOut_Unit }}</td>
-                                    <td>{{ $Item->TransferOut_Quantity }}</td>
-                                    <td>{{ $Item->TransferOut_Price }}</td>
-                                    <td>{{ $Item->BiayaUnit }}</td>
-                                    <td>{{ $Item->BiayaQuantity }}</td>
-                                    <td>{{ $Item->BiayaPrice }}</td>
-                                    <td>{{ $Item->SAkhirUnit }}</td>
-                                    <td>{{ $Item->SAkhirQuantity }}</td>
-                                    <td>{{ $Item->SAkhirPrice }}</td>
-                                </tr>
-                                @endforeach
-                            <tbody>
+                            @foreach($laporanakhirview as $Item)
+                            <tr>
+                                <td>{{ $Item->KODE }}</td>
+                                <td>{{ $Item->KODE_DESKRIPSI_BARANG_SAGE }}</td>
+                                <td>{{ $Item->STOKING_UNIT_BOM }}</td>
+                                <td>{{ $Item->SAwalUnit }}</td>
+                                <td>{{ $Item->SAwalQuantity }}</td>
+                                <td>{{ $Item->SAwalPrice }}</td>
+                                <td>{{ $Item->Pembelian_Unit }}</td>
+                                <td>{{ $Item->Pembelian_Quantity }}</td>
+                                <td>{{ $Item->Pembelian_Price }}</td>
+                                <td>{{ $Item->Penerimaan_Unit }}</td>
+                                <td>{{ $Item->Penerimaan_Quantity }}</td>
+                                <td>{{ $Item->Penerimaan_Price }}</td>
+                                <td>{{ $Item->TransferIn_Unit }}</td>
+                                <td>{{ $Item->TransferIn_Quantity }}</td>
+                                <td>{{ $Item->TransferIn_Price }}</td>
+                                <td>{{ $Item->Pengiriman_Unit }}</td>
+                                <td>{{ $Item->Pengiriman_Quantity }}</td>
+                                <td>{{ $Item->Pengiriman_Price }}</td>
+                                <td>{{ $Item->Bom_Unit }}</td>
+                                <td>{{ $Item->Bom_Quantity }}</td>
+                                <td>{{ $Item->Bom_Price }}</td>
+                                <td>{{ $Item->TransferOut_Unit }}</td>
+                                <td>{{ $Item->TransferOut_Quantity }}</td>
+                                <td>{{ $Item->TransferOut_Price }}</td>
+                                <td>{{ $Item->BiayaUnit }}</td>
+                                <td>{{ $Item->BiayaQuantity }}</td>
+                                <td>{{ $Item->BiayaPrice }}</td>
+                                <td>{{ $Item->SAkhirUnit }}</td>
+                                <td>{{ $Item->SAkhirQuantity }}</td>
+                                <td>{{ $Item->SAkhirPrice }}</td>
+                            </tr>
+                            @endforeach
+                        <tbody>
 
-                        </table>
+                    </table>
 
-                    </div>
                     <?php /* 
                     <a class="btn btn-danger float-left " href="{{ route('boms1.export') }}">Export Laporan Excel</a>
                     */ ?>

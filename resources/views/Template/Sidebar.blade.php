@@ -1,6 +1,6 @@
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
     <!-- Brand Logo -->
-    <a href="{{ 'dashboard' }}" class="brand-link">
+    <a href="{{ '/laporan' }}" class="brand-link">
         <span class="brand-text font-weight-light">Dashboard</span>
     </a>
 
@@ -93,12 +93,15 @@
                         Laporan Stock</p>
                     </a>
                 </li>
-                <li class="nav-item"">
-                    <a href=" /laporandua" class="nav-link">
-                    <p>
-                        Laporan Stock Range Tanggal</p>
-                    </a>
-                </li>
+                <?php /* 
+                            <li class="nav-item"">
+                        <a href=" /laporandua" class="nav-link">
+                        <p>
+                            Laporan Stock Range Tanggal</p>
+                        </a>
+                    </li>
+                    */ ?>
+
                 <li class="nav-item"">
                     <a href=" /Laporanhpps" class="nav-link">
                     <p>

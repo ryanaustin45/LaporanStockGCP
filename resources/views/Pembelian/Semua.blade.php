@@ -14,8 +14,29 @@
                 <div class="card-header text-center">
                     <h4>Data Base Pembelian</h4>
                 </div>
+                <p>Cari Data Filter Tanggal :</p>
+
+                <form action="{{ route('pembelians.filter') }}" method="GET">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col"><label>
+                                    Tanggal Awal :
+                                </label>
+                                <input type="date" name="start_date" class="form-control">
+                            </div>
+                            <div class="col"><label>
+                                    Tanggal Akhir:
+                                </label>
+                                <input type="date" name="end_date" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 pt-4">
+                        <button type="submit" class="btn btn-primary">Filter Tanggal</button>
+                    </div>
+                </form>
                 <div class="card-body">
-                    <table class="table table-bordered mt-3">
+                    <table id="example1" class="table table-bordered mt-3">
                         <?php /*  
                         <tr>
                             <th colspan="12">
@@ -26,65 +47,45 @@
                                 </form>
                             </th>
                         </tr>
-                        
-                        */ ?>
-                        <tr>
-                            <th colspan="12">
-                                <p>Cari Data Filter Tanggal :</p>
-
-                                <form action="{{ route('pembelians.filter') }}" method="GET">
-                                    <div class="container">
-                                        <div class="row">
-                                            <div class="col"><label>
-                                                    Tanggal Awal :
-                                                </label>
-                                                <input type="date" name="start_date" class="form-control">
-                                            </div>
-                                            <div class="col"><label>
-                                                    Tanggal Akhir:
-                                                </label>
-                                                <input type="date" name="end_date" class="form-control">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3 pt-4">
-                                        <button type="submit" class="btn btn-primary">Filter Tanggal</button>
-                                    </div>
-                                </form>
-                            </th>
-                        </tr>
                         <tr>
                             <th colspan="12">
                                 <a class="btn btn-danger float-right " href="{{ route('pembelians.export') }}">Export Convert Import Data Pembelian</a>
                             </th>
                         </tr>
-                        <tr>
-                            <th>No</th>
-                            <th>Tanggal</th>
-                            <th>Kode Outlet</th>
-                            <th>Nama Outlet</th>
-                            <th>Kode Item</th>
-                            <th>Nama Item</th>
-                            <th>Satuan</th>
-                            <th>Quantity</th>
-                            <th>Price</th>
-                            <th>Amount</th>
-                        </tr>
-                        @foreach($pembelians as $Item)
-                        <tr>
-                            <td class="counterCell"></td>
-                            <td>{{ $Item->TANGGAL }}</td>
-                            <td>{{ $Item->KODE }}</td>
-                            <td>{{ $Item->NAMA }}</td>
-                            <td>{{ $Item->KODE_BARANG_SAGE }}</td>
-                            <td>{{ $Item->KODE_DESKRIPSI_BARANG_SAGE }}</td>
-                            <td>{{ $Item->STOKING_UNIT_BOM }}</td>
-                            <td>{{ $Item->QUANTITY }}</td>
-                            <td>{{ $Item->HARGA }}</td>
-                            <td>{{ $Item->JUMLAH }}</td>
+                        
+                        */ ?>
 
-                        </tr>
-                        @endforeach
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Tanggal</th>
+                                <th>Kode Outlet</th>
+                                <th>Nama Outlet</th>
+                                <th>Kode Item</th>
+                                <th>Nama Item</th>
+                                <th>Satuan</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($pembelians as $Item)
+                            <tr>
+                                <td class="counterCell"></td>
+                                <td>{{ $Item->TANGGAL }}</td>
+                                <td>{{ $Item->KODE }}</td>
+                                <td>{{ $Item->NAMA }}</td>
+                                <td>{{ $Item->KODE_BARANG_SAGE }}</td>
+                                <td>{{ $Item->KODE_DESKRIPSI_BARANG_SAGE }}</td>
+                                <td>{{ $Item->STOKING_UNIT_BOM }}</td>
+                                <td>{{ $Item->QUANTITY }}</td>
+                                <td>{{ $Item->HARGA }}</td>
+                                <td>{{ $Item->JUMLAH }}</td>
+
+                            </tr>
+                            @endforeach
+                        </tbody>
                     </table>
 
                 </div>

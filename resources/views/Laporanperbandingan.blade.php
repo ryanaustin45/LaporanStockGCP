@@ -46,42 +46,46 @@
                         <input type="submit" value="CARI">
                     </form>
                     <div class="card-body">
-                        <table class="table table-bordered mt-3">
-                            <tr>
-                                <th>NO</th>
-                                <th>BUKTI KIRIM</th>
-                                <th>TGL KIRIM</th>
-                                <th>DARI</th>
-                                <th>NAMA DARI</th>
-                                <th>TGL TERIMA</th>
-                                <th>PENERIMA</th>
-                                <th>NAMA PENERIMA</th>
-                                <th>KD BARANG</th>
-                                <th>NAMA BARANG</th>
-                                <th>SATUAN</th>
-                                <th>QT KIRIM</th>
-                                <th>QT TERIMA</th>
-                                <th>QT SISA</th>
-                            </tr>
-                            @foreach($laporanpengirimans2 as $Item)
-                            <tr>
-                                <td class="counterCell"></td>
-                                <td>{{ $Item->BUKTI_KIRIM }}</td>
-                                <td>{{ $Item->TGL_KIRIM }}</td>
-                                <td>{{ $Item->DARI }}</td>
-                                <td>{{ $Item->NAMADARI }}</td>
-                                <td>{{ $Item->TGL_TERIMA }}</td>
-                                <td>{{ $Item->PENERIMA }}</td>
-                                <td>{{ $Item->NAMAPENERIMA }}</td>
-                                <td>{{ $Item->KD_BHN }}</td>
-                                <td>{{ $Item->NAMABARANG }}</td>
-                                <td>{{ $Item->SATUAN }}</td>
-                                <td>{{ $Item->QT_KIRIM }}</td>
-                                <td>{{ $Item->QT_TERIMA }}</td>
-                                <td>{{ $Item->QT_SISA }}</td>
+                        <table id="example1" class="table table-bordered mt-3">
+                            <thead>
+                                <tr>
+                                    <th>NO</th>
+                                    <th>BUKTI KIRIM</th>
+                                    <th>TGL KIRIM</th>
+                                    <th>DARI</th>
+                                    <th>NAMA DARI</th>
+                                    <th>TGL TERIMA</th>
+                                    <th>PENERIMA</th>
+                                    <th>NAMA PENERIMA</th>
+                                    <th>KD BARANG</th>
+                                    <th>NAMA BARANG</th>
+                                    <th>SATUAN</th>
+                                    <th>QT KIRIM</th>
+                                    <th>QT TERIMA</th>
+                                    <th>QT SISA</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($laporanpengirimans2 as $Item)
+                                <tr>
+                                    <td class="counterCell"></td>
+                                    <td>{{ $Item->BUKTI_KIRIM }}</td>
+                                    <td>{{ $Item->TGL_KIRIM }}</td>
+                                    <td>{{ $Item->DARI }}</td>
+                                    <td>{{ $Item->NAMADARI }}</td>
+                                    <td>{{ $Item->TGL_TERIMA }}</td>
+                                    <td>{{ $Item->PENERIMA }}</td>
+                                    <td>{{ $Item->NAMAPENERIMA }}</td>
+                                    <td>{{ $Item->KD_BHN }}</td>
+                                    <td>{{ $Item->NAMABARANG }}</td>
+                                    <td>{{ $Item->SATUAN }}</td>
+                                    <td>{{ $Item->QT_KIRIM }}</td>
+                                    <td>{{ $Item->QT_TERIMA }}</td>
+                                    <td>{{ $Item->QT_SISA }}</td>
 
-                            </tr>
-                            @endforeach
+                                </tr>
+                                @endforeach
+                            </tbody>
                         </table>
 
                     </div>
