@@ -400,7 +400,7 @@ class BomController extends Controller
                 Laporan::raw('sum(Pembelian_Price)as Pemprice'),
 
                 Laporan::raw('sum(Penerimaan_Unit)as Peneunit'),
-                Laporan::raw('sum(Penerimaan_Price)as Peneprice'),
+                Laporan::raw('sum(Penerimaan_Unit) * Pembelian_Quantity as Peneprice'),
 
                 Laporan::raw('sum(Pengiriman_Unit)as pengiunit'),
 
@@ -487,7 +487,7 @@ class BomController extends Controller
                 Laporan::raw('sum(Pembelian_Price)as Pemprice'),
 
                 Laporan::raw('sum(Penerimaan_Unit)as Peneunit'),
-                Laporan::raw('sum(Penerimaan_Price)as Peneprice'),
+                Laporan::raw('sum(Penerimaan_Unit) * Pembelian_Quantity as Peneprice'),
 
                 Laporan::raw('sum(Pengiriman_Unit)as pengiunit'),
 
@@ -860,8 +860,6 @@ class BomController extends Controller
         if (Auth::check()) {
             // menangkap data pencarian
             $Tanggal = $request->date;
-            Convertbom::truncate();
-
             /*
 
                 $dprrckbomhargabarang = Dprrckbom::select(

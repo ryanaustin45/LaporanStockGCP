@@ -139,14 +139,29 @@ class ConvertController extends Controller
                 'items.KODE_DESKRIPSI_BARANG_SAGE',
                 'items.STOKING_UNIT_BOM',
                 Pembelian::raw('(pembelians.BANYAK * items.RUMUS_Untuk_Purchase) / items.RUMUS_untuk_BOM as QUANTITY'),
-                Pembelian::raw('(pembelians.JUMLAH / ((pembelians.BANYAK *items. RUMUS_Untuk_Purchase) / items.RUMUS_untuk_BOM))as HARGA'),
+                //Pembelian::raw('(pembelians.JUMLAH / ((pembelians.BANYAK *items. RUMUS_Untuk_Purchase) / items.RUMUS_untuk_BOM))as HARGA'),
                 'pembelians.JUMLAH'
             )->join('items', 'pembelians.KD_BRG', '=', 'items.KODE_BARANG_PURCHASING')->get();
-            $data = [];
             /* masuk kedalam database convert pembelian dari pembelian */
+            $datalaporanpembelian = [];
             foreach ($pembelians1 as $pembelians12) {
                 if ($pembelians12->QUANTITY != 0) {
-                    $data[] = [
+                    $datalaporanpembelian = [
+                        'TANGGAL' => $pembelians12->TANGGAL,
+                        'KODE' => $pembelians12->KD_CUS,
+                        'NAMA' => $pembelians12->NAMAPELANGGAN,
+                        'KODE_BARANG_SAGE' => $pembelians12->KODE_BARANG_SAGE,
+                        'KODE_DESKRIPSI_BARANG_SAGE' => $pembelians12->KODE_DESKRIPSI_BARANG_SAGE,
+                        'STOKING_UNIT_BOM' => $pembelians12->STOKING_UNIT_BOM,
+                        'Pembelian_Unit' => $pembelians12->QUANTITY,
+                        'Pembelian_Quantity' => $pembelians12->JUMLAH / $pembelians12->QUANTITY,
+                        'Pembelian_Price' => $pembelians12->JUMLAH
+                    ];
+                    Laporan::insert($datalaporanpembelian);
+                }
+
+                /*
+                    $data1[] = [
                         'TANGGAL' => $pembelians12->TANGGAL,
                         'KODE' => $pembelians12->KD_CUS,
                         'NAMA' => $pembelians12->NAMAPELANGGAN,
@@ -157,17 +172,19 @@ class ConvertController extends Controller
                         'HARGA' => $pembelians12->HARGA,
                         'JUMLAH' => $pembelians12->JUMLAH
 
-                    ];
-                }
-            }
-            $chunksdata = array_chunk($data, 1000000000);
-            foreach ($chunksdata as $chunks) {
-                Convertpembelian::insert($chunks);
+                    ];*/
             }
 
-            //bisa dihapus sisain insert buat item doang
 
-            /* select untuk memasukan nilai harga pada bom dapur racik dari pembelian */
+
+
+            //bisa dihapus sisain insert buat item doang            Convertpembelian::insert($data1);
+
+
+
+            /*nentuin harga if ada di dapur racik, pake selek yang bawah
+            SELECT dprboms.NAMA_BAHAN, IF(dprboms.NAMA_BAHAN=dprrckboms.NAMA_BARANG, dprrckboms.HargaBarang, avg(convertpembelians.JUMLAH)/avg(convertpembelians.QUANTITY)) as tes FROM dprboms LEFT JOIN dprrckboms ON dprboms.NAMA_BAHAN = dprrckboms.NAMA_BARANG LEFT JOIN convertpembelians ON dprboms.NAMA_BAHAN = convertpembelians.KODE_DESKRIPSI_BARANG_SAGE GROUP BY dprboms.NAMA_BAHAN;
+                 /* select untuk memasukan nilai harga pada bom dapur racik dari pembelian 
             $dprrckbomhargabahan = Dprrckbom::select('dprrckboms.NAMA_BAHAN', Dprrckbom::raw('avg(convertpembelians.JUMLAH)/avg(convertpembelians.QUANTITY) as Harga'))->join(
                 'convertpembelians',
                 'dprrckboms.NAMA_BAHAN',
@@ -175,13 +192,13 @@ class ConvertController extends Controller
                 'convertpembelians.KODE_DESKRIPSI_BARANG_SAGE'
             )->groupBy('dprrckboms.NAMA_BAHAN')->get();
 
-            /*memasukan nilai harga pada bahan baku bom dapur racik dari pembelian */
+            /*memasukan nilai harga pada bahan baku bom dapur racik dari pembelian 
             foreach ($dprrckbomhargabahan as $dprrckbomhargabahans) {
                 Dprrckbom::where('NAMA_BAHAN', $dprrckbomhargabahans->NAMA_BAHAN)
                     ->update(['dprrckboms.Harga' => $dprrckbomhargabahans->Harga]);
             }
 
-            /*memasukan nilai harga pada bahan jadi bom dapur racik dari penjunmlahan bahan baku dapur racik */
+            /*memasukan nilai harga pada bahan jadi bom dapur racik dari penjunmlahan bahan baku dapur racik 
             $dprrckbomhargabarang = Dprrckbom::select(
                 'dprrckboms.KODE_BARANG',
                 Dprrckbom::raw('sum(dprrckboms.Harga) as Harga2')
@@ -191,7 +208,7 @@ class ConvertController extends Controller
                     ->update(['dprrckboms.HargaBarang' => $dprrckbomhargabarangs->Harga2]);
             }
 
-            /* select untuk memasukan nilai harga pada bom dapur pusat dari pembelian */
+            /* select untuk memasukan nilai harga pada bom dapur pusat dari pembelian 
             $dprbom = Dprbom::select(
                 'dprboms.NAMA_BAHAN',
                 Dprbom::raw("IF(dprboms.NAMA_BAHAN = dprrckboms.NAMA_BARANG, dprrckboms.HargaBarang, 
@@ -205,7 +222,7 @@ class ConvertController extends Controller
                 )->leftJoin('convertpembelians', 'dprboms.NAMA_BAHAN', '=', 'convertpembelians.KODE_DESKRIPSI_BARANG_SAGE')
                 ->groupBy('dprboms.NAMA_BAHAN', 'dprrckboms.NAMA_BARANG')->get();
 
-            /*memasukan nilai harga pada bahan baku bom dapur pusat dari bahan jadi dapur racik */
+            /*memasukan nilai harga pada bahan baku bom dapur pusat dari bahan jadi dapur racik 
             foreach ($dprbom as $dprboms) {
                 Dprbom::where('NAMA_BAHAN', $dprboms->NAMA_BAHAN)->update(['dprboms.Harga' => $dprboms->Harga]);
             }
@@ -214,12 +231,12 @@ class ConvertController extends Controller
                 Dprbom::raw('sum(dprboms.Harga) as Harga2')
             )->groupBy('dprboms.KODE_BARANG')->get();
 
-            /*memasukan nilai harga pada bahan jadi bom dapur pusat dari penjunmlahan bahan baku dapur pusat */
+            /*memasukan nilai harga pada bahan jadi bom dapur pusat dari penjunmlahan bahan baku dapur pusat 
             foreach ($dprbomhargabarang as $dprbomhargabarangs) {
                 Dprbom::where('KODE_BARANG', $dprbomhargabarangs->KODE_BARANG)->update(['dprboms.HargaBarang' => $dprbomhargabarangs->Harga2]);
             }
 
-            /* select untuk memasukan nilai harga pada item dari pembelian */
+            /* select untuk memasukan nilai harga pada item dari pembelian 
             $items1 = Item::select(
                 'items.KODE_BARANG_SAGE',
                 Item::raw('avg(convertpembelians.JUMLAH)/avg(convertpembelians.QUANTITY) as Harga')
@@ -230,12 +247,12 @@ class ConvertController extends Controller
                 'convertpembelians.KODE_BARANG_SAGE'
             )->groupBy('items.KODE_BARANG_SAGE')->get();
 
-            /*memasukan nilai harga pada item dari pembelian */
+            /*memasukan nilai harga pada item dari pembelian 
             foreach ($items1 as $itemss1) {
                 Item::where('KODE_BARANG_SAGE', $itemss1->KODE_BARANG_SAGE)->update(['items.Harga' => $itemss1->Harga]);
             }
 
-            /* select untuk memasukan nilai harga pada item dari dapur racik */
+            /* select untuk memasukan nilai harga pada item dari dapur racik 
             $items1123 = Item::select('dprrckboms.NAMA_BARANG', 'dprrckboms.HargaBarang')->join(
                 'dprrckboms',
                 'items.KODE_DESKRIPSI_BARANG_SAGE',
@@ -243,12 +260,12 @@ class ConvertController extends Controller
                 'dprrckboms.NAMA_BARANG'
             )->get();
 
-            /*memasukan nilai harga pada item dari dapur racik */
+            /*memasukan nilai harga pada item dari dapur racik 
             foreach ($items1123 as $itemss1123) {
                 Item::where('KODE_DESKRIPSI_BARANG_SAGE', $itemss1123->NAMA_BARANG)->update(['items.Harga' => $itemss1123->HargaBarang]);
             }
 
-            /* select untuk memasukan nilai harga pada item dari dapur pusat */
+            /* select untuk memasukan nilai harga pada item dari dapur pusat 
             $items11234 = Item::select('dprboms.NAMA_BARANG', 'dprboms.HargaBarang')->join(
                 'dprboms',
                 'items.KODE_DESKRIPSI_BARANG_SAGE',
@@ -256,21 +273,16 @@ class ConvertController extends Controller
                 'dprboms.NAMA_BARANG'
             )->get();
 
-            /*memasukan nilai harga pada item dari dapur pusat */
+            /*memasukan nilai harga pada item dari dapur pusat 
             foreach ($items11234 as $itemss11234) {
                 Item::where('KODE_DESKRIPSI_BARANG_SAGE', $itemss11234->NAMA_BARANG)->update(['items.Harga' => $itemss11234->HargaBarang]);
             }
-            /*nentuin harga if ada di dapur racik, pake selek yang bawah
-            SELECT dprboms.NAMA_BAHAN, IF(dprboms.NAMA_BAHAN=dprrckboms.NAMA_BARANG, dprrckboms.HargaBarang, avg(convertpembelians.JUMLAH)/avg(convertpembelians.QUANTITY)) as tes FROM dprboms LEFT JOIN dprrckboms ON dprboms.NAMA_BAHAN = dprrckboms.NAMA_BARANG LEFT JOIN convertpembelians ON dprboms.NAMA_BAHAN = convertpembelians.KODE_DESKRIPSI_BARANG_SAGE GROUP BY dprboms.NAMA_BAHAN;
-    
             SELECT IF(dprboms.NAMA_BAHAN=dprrckboms.NAMA_BARANG, "MORE", "LESS")
             FROM dprboms; 
             more = SELECT dprrckboms.NAMA_BAHAN,dprrckboms.Harga,dprrckboms.NAMA_BARANG,sum(dprrckboms.Harga) FROM `dprrckboms` GROUP BY dprrckboms.NAMA_BARANG as harga;
             less = else langsung dari convert pembelian avg(convertpembelians.JUMLAH)/avg(convertpembelians.QUANTITY) as Harga
             
             Dprbom::raw("'IF'('dprboms.NAMA_BAHAN' '=' 'dprrckboms.NAMA_BARANG', 'dprrckboms.HargaBarang', ''avg'('convertpembelians.JUMLAH')' '/' ''avg'('convertpembelians.QUANTITY')') as Harga")
-            */
-
             $PembelianSaldo = Convertpembelian::select(
                 'TANGGAL',
                 'KODE',
@@ -287,27 +299,11 @@ class ConvertController extends Controller
             )->get();
 
             foreach ($PembelianSaldo as $PembelianSaldos) {
-                $temp = Laporan::where('TANGGAL', $PembelianSaldos->TANGGAL)->where('KODE', $PembelianSaldos->KODE)->where('KODE_BARANG_SAGE', $PembelianSaldos->KODE_BARANG_SAGE)
-                    ->update([
-                        'Pembelian_Unit' => $PembelianSaldos->QUANTITY2, 'Pembelian_Quantity' => $PembelianSaldos->JUMLAH2 / $PembelianSaldos->QUANTITY2,
-                        'Pembelian_Price' => $PembelianSaldos->JUMLAH2
-                    ]);
-                if ($temp) {
-                    continue;
-                } else {
-                    Laporan::create([
-                        'TANGGAL' => $PembelianSaldos->TANGGAL,
-                        'KODE' => $PembelianSaldos->KODE,
-                        'NAMA' => $PembelianSaldos->NAMA,
-                        'KODE_BARANG_SAGE' => $PembelianSaldos->KODE_BARANG_SAGE,
-                        'KODE_DESKRIPSI_BARANG_SAGE' => $PembelianSaldos->KODE_DESKRIPSI_BARANG_SAGE,
-                        'STOKING_UNIT_BOM' => $PembelianSaldos->STOKING_UNIT_BOM,
-                        'Pembelian_Unit' => $PembelianSaldos->QUANTITY2,
-                        'Pembelian_Quantity' => $PembelianSaldos->JUMLAH2 / $PembelianSaldos->QUANTITY2,
-                        'Pembelian_Price' => $PembelianSaldos->JUMLAH2,
-                    ]);
-                }
             }
+            
+            */
+
+
             return back()->with('success', 'Berhasil Upload');
             //response()->json(['success' => 'file berhasil di upload']);
         }
@@ -336,13 +332,11 @@ class ConvertController extends Controller
                     Penerimaan::raw('(penerimaans.QT_TERIMA * items.RUMUS_Untuk_Purchase) / items.RUMUS_untuk_BOM as QUANTITY'),
                     'items.Harga'
                 )->groupBy('penerimaans.KD_BHN', 'penerimaans.PENERIMA', 'penerimaans.DARI', 'penerimaans.TANGGAL')->get();
-
-            $data = [];
-
             // menjadi convert penerimaan 
+            $dataconvertpenerimaan = [];
             foreach ($penerimaanss as $penerimaansss) {
                 if ($penerimaansss->QUANTITY != 0) {
-                    $data[] = [
+                    $dataconvertpenerimaan = [
                         'TANGGAL' => $penerimaansss->TANGGAL,
                         'PENERIMA' => $penerimaansss->PENERIMA,
                         'NAMAPENERIMA' => $penerimaansss->ALAMAT,
@@ -355,12 +349,10 @@ class ConvertController extends Controller
                         'HARGA' => $penerimaansss->Harga,
                         'JUMLAH' => $penerimaansss->QUANTITY * $penerimaansss->Harga
                     ];
+                    Convertpenerimaan::insert($dataconvertpenerimaan);
                 }
             }
-            $chunksdata = array_chunk($data, 1000000000);
-            foreach ($chunksdata as $chunks) {
-                Convertpenerimaan::insert($chunks);
-            }
+
             // dari dimasukan ke pengiriman
             $PenerimanSaldo = Convertpenerimaan::select(
                 'convertpenerimaans.TANGGAL',
@@ -372,32 +364,22 @@ class ConvertController extends Controller
                 Convertpenerimaan::raw('sum(convertpenerimaans.QUANTITY) as COST'),
                 'convertpenerimaans.HARGA',
             )->groupBy('convertpenerimaans.TANGGAL', 'convertpenerimaans.DARI', 'convertpenerimaans.KODE_BARANG_SAGE')->get();
-
+            $datalaporan = [];
             foreach ($PenerimanSaldo as $PenerimanSaldos) {
-                $temp = Laporan::Where('TANGGAL', $PenerimanSaldos->TANGGAL)->where('KODE', $PenerimanSaldos->DARI)
-                    ->where('KODE_BARANG_SAGE', $PenerimanSaldos->KODE_BARANG_SAGE)
-                    ->update([
-                        'Pengiriman_Unit' => $PenerimanSaldos->COST,
-                        'Pengiriman_Quantity'  => $PenerimanSaldos->HARGA,
-                        'Pengiriman_Price'  => $PenerimanSaldos->HARGA * $PenerimanSaldos->COST
-                    ]);
-                if ($temp) {
-                    continue;
-                } else {
-                    Laporan::create([
-                        'TANGGAL' => $PenerimanSaldos->TANGGAL,
-                        'KODE' => $PenerimanSaldos->DARI,
-                        'NAMA' => $PenerimanSaldos->NAMADARI,
-                        'KODE_BARANG_SAGE' => $PenerimanSaldos->KODE_BARANG_SAGE,
-                        'KODE_DESKRIPSI_BARANG_SAGE' => $PenerimanSaldos->KODE_DESKRIPSI_BARANG_SAGE,
-                        'STOKING_UNIT_BOM' => $PenerimanSaldos->STOKING_UNIT_BOM,
-                        'Pengiriman_Unit' => $PenerimanSaldos->COST,
-                        'Pengiriman_Quantity'  => $PenerimanSaldos->HARGA,
-                        'Pengiriman_Price'  => $PenerimanSaldos->HARGA * $PenerimanSaldos->COST
-                    ]);
-                }
-            }
 
+                $datalaporan = [
+                    'TANGGAL' => $PenerimanSaldos->TANGGAL,
+                    'KODE' => $PenerimanSaldos->DARI,
+                    'NAMA' => $PenerimanSaldos->NAMADARI,
+                    'KODE_BARANG_SAGE' => $PenerimanSaldos->KODE_BARANG_SAGE,
+                    'KODE_DESKRIPSI_BARANG_SAGE' => $PenerimanSaldos->KODE_DESKRIPSI_BARANG_SAGE,
+                    'STOKING_UNIT_BOM' => $PenerimanSaldos->STOKING_UNIT_BOM,
+                    'Pengiriman_Unit' => $PenerimanSaldos->COST,
+                    'Pengiriman_Quantity'  => $PenerimanSaldos->HARGA,
+                    'Pengiriman_Price'  => $PenerimanSaldos->HARGA * $PenerimanSaldos->COST
+                ];
+                Laporan::insert($datalaporan);
+            }
 
 
             // menjadi convert bomdpr 
@@ -416,19 +398,20 @@ class ConvertController extends Controller
                 'convertpenerimaans.DARI',
                 'convertpenerimaans.NAMADARI',
                 'convertpenerimaans.KODE_BARANG_SAGE',
-                Convertpenerimaan::raw('sum(convertpenerimaans.QUANTITY) as unit2'),
+                'convertpenerimaans.QUANTITY as unit2',
                 'convertpenerimaans.KODE_DESKRIPSI_BARANG_SAGE',
                 'convertpenerimaans.STOKING_UNIT_BOM',
                 Convertpenerimaan::raw('RIGHT(dprboms.KODE_BAHAN, 11) AS kodeBarang'),
                 'dprboms.NAMA_BAHAN',
                 'dprboms.SATUAN_BAHAN',
-                Convertpenerimaan::raw('sum(convertpenerimaans.QUANTITY) * dprboms.BANYAK AS unit'),
+                Convertpenerimaan::raw('convertpenerimaans.QUANTITY * dprboms.BANYAK AS unit'),
                 'dprboms.Harga AS hargasatuan',
                 'dprboms.HargaBarang AS hargabom',
-            )->groupBy('convertpenerimaans.TANGGAL', 'convertpenerimaans.DARI', 'dprboms.NAMA_BAHAN', 'convertpenerimaans.KODE_BARANG_SAGE')->get();
-
+            )->groupBy('convertpenerimaans.TANGGAL', 'convertpenerimaans.DARI', 'dprboms.NAMA_BAHAN')->get();
+            $tempbom = "tes";
+            $databom = [];
             foreach ($Boms1 as $Boms11) {
-                Convertbom::create([
+                $databom = [
                     'TANGGAL' => $Boms11->TANGGAL,
                     'KODE' => $Boms11->DARI,
                     'NAMA' => $Boms11->NAMADARI,
@@ -438,14 +421,18 @@ class ConvertController extends Controller
                     'QUANTITY' => $Boms11->unit,
                     'HARGA' => $Boms11->hargasatuan,
                     'JUMLAH' => $Boms11->unit * $Boms11->hargasatuan
+                ];
+                Convertbom::insert($databom);
 
-                ]);
-                Laporan::Where('TANGGAL', $Boms11->TANGGAL)->where('KODE', $Boms11->DARI)->where('KODE_BARANG_SAGE', $Boms11->KODE_BARANG_SAGE)
-                    ->update([
-                        'Penerimaan_Unit' => $Boms11->unit2,
-                        'Penerimaan_Quantity' => $Boms11->hargabom,
-                        'Penerimaan_Price' => $Boms11->unit2 * $Boms11->hargabom
-                    ]);/*
+                if ($tempbom != $Boms11->KODE_BARANG_SAGE) {
+                    Laporan::Where('TANGGAL', $Boms11->TANGGAL)->where('KODE', $Boms11->DARI)->where('KODE_BARANG_SAGE', $Boms11->KODE_BARANG_SAGE)
+                        ->update([
+                            'Penerimaan_Unit' => $Boms11->unit2,
+                            'Penerimaan_Quantity' => $Boms11->hargabom,
+                            'Penerimaan_Price' => $Boms11->unit2 * $Boms11->hargabom
+                        ]);
+                    $tempbom =  $Boms11->KODE_BARANG_SAGE;
+                }/*
             if ($temp) {
                 continue;
             } else {
@@ -462,6 +449,7 @@ class ConvertController extends Controller
                 ]);
             }*/
             }
+
             // menjadi convert bomdprrck
             $Boms2 = Convertpenerimaan::join('dprrckboms', function ($join) {
                 $join->on(
@@ -478,19 +466,21 @@ class ConvertController extends Controller
                 'convertpenerimaans.DARI',
                 'convertpenerimaans.NAMADARI',
                 'convertpenerimaans.KODE_BARANG_SAGE',
-                Convertpenerimaan::raw('sum(convertpenerimaans.QUANTITY)as unit2'),
+                'convertpenerimaans.QUANTITY as unit2',
                 'convertpenerimaans.KODE_DESKRIPSI_BARANG_SAGE',
                 'convertpenerimaans.STOKING_UNIT_BOM',
                 Convertpenerimaan::raw('RIGHT(dprrckboms.KODE_BAHAN, 11) AS kodeBarang'),
                 'dprrckboms.NAMA_BAHAN',
                 'dprrckboms.SATUAN_BAHAN',
-                Convertpenerimaan::raw('sum(convertpenerimaans.QUANTITY)* dprrckboms.BANYAK AS unit'),
+                Convertpenerimaan::raw('convertpenerimaans.QUANTITY * dprrckboms.BANYAK AS unit'),
                 'dprrckboms.Harga AS hargasatuan',
                 'dprrckboms.HargaBarang AS hargabom',
-            )->groupBy('convertpenerimaans.TANGGAL', 'convertpenerimaans.DARI', 'dprrckboms.NAMA_BAHAN', 'convertpenerimaans.KODE_BARANG_SAGE')->get();
+            )->groupBy('convertpenerimaans.TANGGAL', 'convertpenerimaans.DARI', 'dprrckboms.NAMA_BAHAN')->get();
+            $tempbom2 = "tes";
+            $databom3 = [];
 
             foreach ($Boms2 as $Boms22) {
-                Convertbom::create([
+                $databom3 = [
                     'TANGGAL' => $Boms22->TANGGAL,
                     'KODE' => $Boms22->DARI,
                     'NAMA' => $Boms22->NAMADARI,
@@ -500,13 +490,18 @@ class ConvertController extends Controller
                     'QUANTITY' => $Boms22->unit,
                     'HARGA' => $Boms22->hargasatuan,
                     'JUMLAH' => $Boms22->unit * $Boms22->hargasatuan
-                ]);
-                Laporan::Where('TANGGAL', $Boms22->TANGGAL)->where('KODE', $Boms22->DARI)->where('KODE_BARANG_SAGE', $Boms22->KODE_BARANG_SAGE)
-                    ->update([
-                        'Penerimaan_Unit' => $Boms22->unit2,
-                        'Penerimaan_Quantity' => $Boms22->hargabom,
-                        'Penerimaan_Price' =>  $Boms22->unit2 * $Boms22->hargabom
-                    ]);/*
+                ];
+                Convertbom::insert($databom3);
+
+                if ($tempbom2 != $Boms22->KODE_BARANG_SAGE) {
+                    Laporan::Where('TANGGAL', $Boms22->TANGGAL)->where('KODE', $Boms22->DARI)->where('KODE_BARANG_SAGE', $Boms22->KODE_BARANG_SAGE)
+                        ->update([
+                            'Penerimaan_Unit' => $Boms22->unit2,
+                            'Penerimaan_Quantity' => $Boms22->hargabom,
+                            'Penerimaan_Price' =>  $Boms22->unit2 * $Boms22->hargabom
+                        ]);
+                    $tempbom2 =  $Boms22->KODE_BARANG_SAGE;
+                }/*
             $temp = Laporan::Where('TANGGAL', $Boms22->TANGGAL)->where('KODE', $Boms22->DARI)->where('KODE_BARANG_SAGE', $Boms22->KODE_BARANG_SAGE)
                 ->update([
                     'Penerimaan_Unit' => $Boms22->unit2,
@@ -543,32 +538,22 @@ class ConvertController extends Controller
                 'convertpenerimaans.HARGA',
                 'convertpenerimaans.JUMLAH',
             )->groupBy('convertpenerimaans.TANGGAL', 'convertpenerimaans.PENERIMA', 'convertpenerimaans.KODE_BARANG_SAGE')->get();
-
+            $datalaporan2 = [];
             foreach ($PenerimanSaldo2 as $PenerimanSaldo2s) {
-                $temp = Laporan::where('TANGGAL', $PenerimanSaldo2s->TANGGAL)->where('KODE', $PenerimanSaldo2s->PENERIMA)->where('KODE_BARANG_SAGE', $PenerimanSaldo2s->KODE_BARANG_SAGE)
-                    ->update([
-                        'Bom_Unit' => $PenerimanSaldo2s->COST,
-
-                        'Penerimaan_Unit' => Laporan::raw('IFNULL(Bom_Unit, 0) + IFNULL(Penerimaan_Unit, 0)'),
-                        'Penerimaan_Quantity' => $PenerimanSaldo2s->HARGA,
-                        'Penerimaan_Price' => Laporan::raw('IFNULL(Penerimaan_Unit, 0) * IFNULL(Penerimaan_Quantity, 0)'),
-                    ]);
-                if ($temp) {
-                    continue;
-                } else {
-                    Laporan::create([
-                        'TANGGAL' => $PenerimanSaldo2s->TANGGAL,
-                        'KODE' => $PenerimanSaldo2s->PENERIMA,
-                        'NAMA' => $PenerimanSaldo2s->NAMAPENERIMA,
-                        'KODE_BARANG_SAGE' => $PenerimanSaldo2s->KODE_BARANG_SAGE,
-                        'KODE_DESKRIPSI_BARANG_SAGE' => $PenerimanSaldo2s->KODE_DESKRIPSI_BARANG_SAGE,
-                        'STOKING_UNIT_BOM' => $PenerimanSaldo2s->STOKING_UNIT_BOM,
-                        'Penerimaan_Unit' => $PenerimanSaldo2s->COST,
-                        'Penerimaan_Quantity' => $PenerimanSaldo2s->HARGA,
-                        'Penerimaan_Price' => $PenerimanSaldo2s->COST * $PenerimanSaldo2s->HARGA
-                    ]);
-                }
+                $datalaporan2 = [
+                    'TANGGAL' => $PenerimanSaldo2s->TANGGAL,
+                    'KODE' => $PenerimanSaldo2s->PENERIMA,
+                    'NAMA' => $PenerimanSaldo2s->NAMAPENERIMA,
+                    'KODE_BARANG_SAGE' => $PenerimanSaldo2s->KODE_BARANG_SAGE,
+                    'KODE_DESKRIPSI_BARANG_SAGE' => $PenerimanSaldo2s->KODE_DESKRIPSI_BARANG_SAGE,
+                    'STOKING_UNIT_BOM' => $PenerimanSaldo2s->STOKING_UNIT_BOM,
+                    'Penerimaan_Unit' => $PenerimanSaldo2s->COST,
+                    'Penerimaan_Quantity' => $PenerimanSaldo2s->HARGA,
+                    'Penerimaan_Price' => $PenerimanSaldo2s->COST * $PenerimanSaldo2s->HARGA
+                ];
+                Laporan::insert($datalaporan2);
             }
+
 
 
 
@@ -582,29 +567,20 @@ class ConvertController extends Controller
                 'convertboms.HARGA',
                 Convertbom::raw('sum(convertboms.QUANTITY) as unit'),
             )->groupBy('convertboms.TANGGAL', 'convertboms.KODE', 'convertboms.KODE_BARANG_SAGE')->get();
-
+            $datalaporan1 = [];
             foreach ($bomconvertsaldo as $bomconvertsaldos) {
-                $temp = Laporan::where('TANGGAL', $bomconvertsaldos->TANGGAL)->where('KODE', $bomconvertsaldos->KODE)->where('KODE_BARANG_SAGE', $bomconvertsaldos->KODE_BARANG_SAGE)
-                    ->update([
-                        'Bom_Unit' => $bomconvertsaldos->unit,
-                        'Bom_Quantity' => $bomconvertsaldos->HARGA,
-                        'Bom_Price' => $bomconvertsaldos->unit * $bomconvertsaldos->HARGA
-                    ]);
-                if ($temp) {
-                    continue;
-                } else {
-                    Laporan::create([
-                        'TANGGAL' => $bomconvertsaldos->TANGGAL,
-                        'KODE' => $bomconvertsaldos->KODE,
-                        'NAMA' => $bomconvertsaldos->NAMA,
-                        'KODE_BARANG_SAGE' => $bomconvertsaldos->KODE_BARANG_SAGE,
-                        'KODE_DESKRIPSI_BARANG_SAGE' => $bomconvertsaldos->KODE_DESKRIPSI_BARANG_SAGE,
-                        'STOKING_UNIT_BOM' => $bomconvertsaldos->STOKING_UNIT_BOM,
-                        'Bom_Unit' => $bomconvertsaldos->unit,
-                        'Bom_Quantity' => $bomconvertsaldos->HARGA,
-                        'Bom_Price' => $bomconvertsaldos->unit * $bomconvertsaldos->HARGA
-                    ]);
-                }
+                $datalaporan1 = [
+                    'TANGGAL' => $bomconvertsaldos->TANGGAL,
+                    'KODE' => $bomconvertsaldos->KODE,
+                    'NAMA' => $bomconvertsaldos->NAMA,
+                    'KODE_BARANG_SAGE' => $bomconvertsaldos->KODE_BARANG_SAGE,
+                    'KODE_DESKRIPSI_BARANG_SAGE' => $bomconvertsaldos->KODE_DESKRIPSI_BARANG_SAGE,
+                    'STOKING_UNIT_BOM' => $bomconvertsaldos->STOKING_UNIT_BOM,
+                    'Bom_Unit' => $bomconvertsaldos->unit,
+                    'Bom_Quantity' => $bomconvertsaldos->HARGA,
+                    'Bom_Price' => $bomconvertsaldos->unit * $bomconvertsaldos->HARGA
+                ];
+                Laporan::insert($datalaporan1);
             }
             return back()->with('success', 'Berhasil Upload');
         }
@@ -643,10 +619,10 @@ class ConvertController extends Controller
                 Penjualan::raw('penjualans.Jumlah / penjualans.Banyak AS HARGA'),
             )->get();
 
-            $data = [];
+            $dataconvertbom = [];
             foreach ($Boms1 as $Boms11) {
                 if ($Boms11->QUANTITY != 0) {
-                    $data[] = [
+                    $dataconvertbom = [
                         'TANGGAL' => $Boms11->TANGGAL,
                         'KODE' => $Boms11->KODE_OUTLET,
                         'NAMA' => $Boms11->Outlet,
@@ -657,12 +633,10 @@ class ConvertController extends Controller
                         'HARGA' => $Boms11->HARGA,
                         'JUMLAH' => $Boms11->QUANTITY * $Boms11->HARGA
                     ];
+                    Convertbom::insert($dataconvertbom);
                 }
             }
-            $chunksdata = array_chunk($data, 1000000000);
-            foreach ($chunksdata as $chunks) {
-                Convertbom::insert($chunks);
-            }
+
             $bomconvertsaldo = Convertbom::select(
                 'convertboms.TANGGAL',
                 'convertboms.KODE',
@@ -674,29 +648,20 @@ class ConvertController extends Controller
                 Convertpenerimaan::raw('sum(convertboms.QUANTITY) as unit'),
             )->groupBy('convertboms.TANGGAL', 'convertboms.KODE', 'convertboms.KODE_BARANG_SAGE')->get();
 
+            $datalaporanpenjialan = [];
             foreach ($bomconvertsaldo as $bomconvertsaldos) {
-                $temp = Laporan::where('TANGGAL', $bomconvertsaldos->TANGGAL)->where('KODE', $bomconvertsaldos->KODE)->where('KODE_BARANG_SAGE', $bomconvertsaldos->KODE_BARANG_SAGE)
-                    ->update([
-                        'SAwalUnit' => $bomconvertsaldos->unit,
-                        'Bom_Unit' => Laporan::raw('IFNULL(Bom_Unit, 0) + IFNULL(SAwalUnit, 0)'),
-                        'Bom_Quantity' => $bomconvertsaldos->HARGA,
-                        'Bom_Price' => Laporan::raw('(IFNULL(Bom_Unit, 0) + IFNULL(SAwalUnit, 0)) *Bom_Quantity ')
-                    ]);
-                if ($temp) {
-                    continue;
-                } else {
-                    Laporan::create([
-                        'TANGGAL' => $bomconvertsaldos->TANGGAL,
-                        'KODE' => $bomconvertsaldos->KODE,
-                        'NAMA' => $bomconvertsaldos->NAMA,
-                        'KODE_BARANG_SAGE' => $bomconvertsaldos->KODE_BARANG_SAGE,
-                        'KODE_DESKRIPSI_BARANG_SAGE' => $bomconvertsaldos->KODE_DESKRIPSI_BARANG_SAGE,
-                        'STOKING_UNIT_BOM' => $bomconvertsaldos->STOKING_UNIT_BOM,
-                        'Bom_Unit' => $bomconvertsaldos->unit,
-                        'Bom_Quantity' => $bomconvertsaldos->HARGA,
-                        'Bom_Price' => Laporan::raw('(IFNULL(Bom_Unit, 0) + IFNULL(SAwalUnit, 0)) *Bom_Quantity ')
-                    ]);
-                }
+                $datalaporanpenjialan = [
+                    'TANGGAL' => $bomconvertsaldos->TANGGAL,
+                    'KODE' => $bomconvertsaldos->KODE,
+                    'NAMA' => $bomconvertsaldos->NAMA,
+                    'KODE_BARANG_SAGE' => $bomconvertsaldos->KODE_BARANG_SAGE,
+                    'KODE_DESKRIPSI_BARANG_SAGE' => $bomconvertsaldos->KODE_DESKRIPSI_BARANG_SAGE,
+                    'STOKING_UNIT_BOM' => $bomconvertsaldos->STOKING_UNIT_BOM,
+                    'Bom_Unit' => $bomconvertsaldos->unit,
+                    'Bom_Quantity' => $bomconvertsaldos->HARGA,
+                    'Bom_Price' => Laporan::raw('(IFNULL(Bom_Unit, 0) + IFNULL(SAwalUnit, 0)) *Bom_Quantity ')
+                ];
+                Laporan::insert($datalaporanpenjialan);
             }
             /* boms 22
         $Boms2 = Convertbom::join('dprboms', function ($join) {
