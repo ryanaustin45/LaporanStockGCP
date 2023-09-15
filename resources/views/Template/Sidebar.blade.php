@@ -49,13 +49,22 @@
                 </li>
                 <li class="nav-item">
                     <a href="{{ 'dashboard' }}" class="nav-link">
-                        <i class="nav-icon fas fa-copy"></i>
+                        <i class="nav-icon fas fa-edit"></i>
                         <p>
                             Upload Data
                         </p>
                     </a>
                 </li>
 
+
+                <li class="nav-item"">
+                    <a href=" /laporan" class="nav-link">
+                    <i class="nav-icon fas fa-copy"></i>
+                    <p>
+                        Laporan Stock</p>
+                    </a>
+                </li>
+                <?php /* 
                 <!-- DATA BASE PEMBELIAN -->
                 <li class="nav-item"">
                     <a href=" /pembelian" class="nav-link">
@@ -87,13 +96,6 @@
                         Data Convert Bom </p>
                     </a>
                 </li>
-                <li class="nav-item"">
-                    <a href=" /laporan" class="nav-link">
-                    <p>
-                        Laporan Stock</p>
-                    </a>
-                </li>
-                <?php /* 
                             <li class="nav-item"">
                         <a href=" /laporandua" class="nav-link">
                         <p>
@@ -104,6 +106,7 @@
 
                 <li class="nav-item"">
                     <a href=" /Laporanhpps" class="nav-link">
+                    <i class="nav-icon fas fa-copy"></i>
                     <p>
                         Laporan HPP</p>
                     </a>

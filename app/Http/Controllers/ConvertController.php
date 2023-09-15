@@ -317,6 +317,7 @@ class ConvertController extends Controller
             Penerimaan::truncate();
 
             Excel::import(new PenerimaansImport, request()->file('file'));
+            Convertbom::truncate();
 
             $penerimaanss = Penerimaan::join('items', 'items.KODE_BARANG_PURCHASING', '=', 'penerimaans.KD_BHN')
                 ->join('outlets', 'outlets.KODE', '=', 'penerimaans.PENERIMA')
@@ -383,17 +384,12 @@ class ConvertController extends Controller
 
 
             // menjadi convert bomdpr 
-            $Boms1 = Convertpenerimaan::join('dprboms', function ($join) {
-                $join->on(
-                    'dprboms.NAMA_BARANG',
-                    '=',
-                    'convertpenerimaans.KODE_DESKRIPSI_BARANG_SAGE'
-                )->on(
-                    Convertpenerimaan::raw('LEFT(dprboms.KODE_BARANG,4)'),
-                    '=',
-                    'convertpenerimaans.DARI'
-                );
-            })->select(
+            $Boms1 = Convertpenerimaan::join(
+                'dprboms',
+                Convertpenerimaan::raw('RIGHT(dprboms.KODE_BARANG, 11)'),
+                '=',
+                'convertpenerimaans.KODE_BARANG_SAGE'
+            )->select(
                 'convertpenerimaans.TANGGAL',
                 'convertpenerimaans.DARI',
                 'convertpenerimaans.NAMADARI',
@@ -451,17 +447,12 @@ class ConvertController extends Controller
             }
 
             // menjadi convert bomdprrck
-            $Boms2 = Convertpenerimaan::join('dprrckboms', function ($join) {
-                $join->on(
-                    'dprrckboms.NAMA_BARANG',
-                    '=',
-                    'convertpenerimaans.KODE_DESKRIPSI_BARANG_SAGE'
-                )->on(
-                    Convertpenerimaan::raw('LEFT(dprrckboms.KODE_BARANG,4)'),
-                    '=',
-                    'convertpenerimaans.DARI'
-                );
-            })->select(
+            $Boms2 = Convertpenerimaan::join(
+                'dprrckboms',
+                Convertpenerimaan::raw('RIGHT(dprrckboms.KODE_BARANG, 11)'),
+                '=',
+                'convertpenerimaans.KODE_BARANG_SAGE'
+            )->select(
                 'convertpenerimaans.TANGGAL',
                 'convertpenerimaans.DARI',
                 'convertpenerimaans.NAMADARI',
@@ -598,17 +589,12 @@ class ConvertController extends Controller
             Convertbom::truncate();
 
 
-            $Boms1 = Penjualan::join('boms', function ($join) {
-                $join->on(
-                    'boms.NAMA_BARANG',
-                    '=',
-                    'penjualans.Barang'
-                )->on(
-                    Penjualan::raw('LEFT(boms.KODE_BARANG,4)'),
-                    '=',
-                    'penjualans.KODE_OUTLET'
-                );
-            })->select(
+            $Boms1 = Penjualan::join(
+                'boms',
+                Penjualan::raw('RIGHT(boms.KODE_BARANG, 13)'),
+                '=',
+                'penjualans.KODE_OUTLET'
+            )->select(
                 'penjualans.TANGGAL',
                 'penjualans.KODE_OUTLET',
                 'penjualans.Outlet',

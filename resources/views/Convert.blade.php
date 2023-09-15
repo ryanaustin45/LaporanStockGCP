@@ -3,6 +3,7 @@
 
 <head>
     @include('Template.Head')
+    <title> Dashboard </title>
 </head>
 
 <body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">

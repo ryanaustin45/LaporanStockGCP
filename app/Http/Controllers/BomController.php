@@ -380,7 +380,890 @@ class BomController extends Controller
         return redirect("/")->withSuccess('Opps! You do not have access');
     }
 
+    public function LaporanTanggaldua(Request $request)
+    {
+        if (Auth::check()) {
+            // menangkap data pencarian
+            $Tanggal_awal = $request->Tanggal_awal;
+            $Tanggal_akhir = $request->Tanggal_akhir;
+
+            // Convertdprbom
+            Laporanakhir::truncate();
+
+            // SELECT `KODE`,`NAMA`,`KODE_BARANG_SAGE`,`KODE_DESKRIPSI_BARANG_SAGE`,sum(Pembelian_Unit),sum(Penerimaan_Unit),sum(Pengiriman_Unit),sum(Bom_Unit) FROM `laporans` WHERE `TANGGAL` < '2023-01-05' GROUP BY `KODE`,`KODE_BARANG_SAGE`;
+            $LaporanSaldoAwal = Laporan::select(
+                'KODE',
+                'NAMA',
+                'KODE_BARANG_SAGE',
+                'KODE_DESKRIPSI_BARANG_SAGE',
+                'STOKING_UNIT_BOM',
+                Laporan::raw('sum(Pembelian_Unit)as Pemunit'),
+                Laporan::raw('sum(Pembelian_Price)as Pemprice'),
+
+                Laporan::raw('sum(Penerimaan_Unit)as Peneunit'),
+                Laporan::raw('sum(Penerimaan_Price)as Peneprice'),
+
+                Laporan::raw('sum(Pengiriman_Unit)as pengiunit'),
+
+                Laporan::raw('sum(Bom_Unit)as Bomunit'),
+
+            )->groupBy('KODE', 'KODE_BARANG_SAGE')->whereDate('TANGGAL', '<', $Tanggal_awal)->get();
+
+            foreach ($LaporanSaldoAwal as $LaporanSaldoAwals) {
+                Laporanakhir::create([
+                    'KODE' => $LaporanSaldoAwals->KODE,
+                    'NAMA' => $LaporanSaldoAwals->NAMA,
+                    'KODE_BARANG_SAGE' => $LaporanSaldoAwals->KODE_BARANG_SAGE,
+                    'KODE_DESKRIPSI_BARANG_SAGE' => $LaporanSaldoAwals->KODE_DESKRIPSI_BARANG_SAGE,
+                    'STOKING_UNIT_BOM' => $LaporanSaldoAwals->STOKING_UNIT_BOM,
+
+                    'SAkhirUnit' => $LaporanSaldoAwals->Pemunit + $LaporanSaldoAwals->Peneunit,
+                    'SAkhirPrice' => $LaporanSaldoAwals->Pemprice + $LaporanSaldoAwals->Peneprice,
+
+                    'SAkhirQuantity' => Laporanakhir::raw('IFNULL(SAkhirPrice / NULLIF( SAkhirUnit, 0 ), 0)  '),
+
+                    'Pengiriman_Price' => $LaporanSaldoAwals->pengiunit,
+                    'Bom_Price' => $LaporanSaldoAwals->Bomunit,
+
+                    'SAwalUnit' => ($LaporanSaldoAwals->Pemunit + $LaporanSaldoAwals->Peneunit) - ($LaporanSaldoAwals->pengiunit + $LaporanSaldoAwals->Bomunit),
+                    'SAwalPrice' => Laporanakhir::raw('SAkhirPrice - ((SAkhirQuantity * IFNULL( Pengiriman_Price, 0 )) +( SAkhirQuantity * IFNULL( Bom_Price, 0 )))'),
+                    'SAwalQuantity' => Laporanakhir::raw('IFNULL(SAwalPrice / NULLIF( SAwalUnit, 0 ), 0)')
+                ]);
+            }
+
+            $UpdateBiayaLaporan1 = Laporanakhir::get();
+
+            foreach ($UpdateBiayaLaporan1 as $LaporanSaldoAwals123) {
+                Laporanakhir::where('KODE', '<>', 7301)->where('KODE', '<>', 7302)
+                    ->where('KODE', '<', 9000)
+                    ->where(Laporanakhir::raw('LEFT(KODE_BARANG_SAGE,2)'), '<>', '12')
+                    ->where(Laporanakhir::raw('LEFT(KODE_BARANG_SAGE,2)'), '<>', '11')
+                    ->update([
+
+                        'SAwalUnit' => Laporanakhir::raw('(SAkhirUnit -(Pengiriman_Price + Bom_Price)) - SAkhirUnit'),
+                        'SAwalPrice' => Laporanakhir::raw('(SAkhirPrice - ((SAkhirQuantity * IFNULL( Pengiriman_Price, 0 )) +( SAkhirQuantity * IFNULL( Bom_Price, 0 )))) - SAkhirPrice')
+                    ]);
+            }
+
+            $LaporanSaldoAwalupdate = Laporanakhir::get();
+
+            foreach ($LaporanSaldoAwalupdate as $LaporanSaldoAwals) {
+                Laporanakhir::where('KODE', $LaporanSaldoAwals->KODE)->where('KODE_BARANG_SAGE', $LaporanSaldoAwals->KODE_BARANG_SAGE)
+                    ->update([
+                        'Pembelian_Unit' => 0,
+                        'Pembelian_Quantity' => 0,
+                        'Pembelian_Price' => 0,
+
+                        'Penerimaan_Unit' => 0,
+                        'Penerimaan_Quantity' => 0,
+                        'Penerimaan_Price' => 0,
+
+                        'TransferIn_Unit' => $LaporanSaldoAwals->SAwalUnit,
+                        'TransferIn_Price' => $LaporanSaldoAwals->SAwalPrice,
+                        'TransferIn_Quantity' => $LaporanSaldoAwals->SAwalQuantity,
+
+                        'Pengiriman_Price' => 0,
+                        'Bom_Price' => 0,
+
+                        'TransferOut_Quantity' => 0,
+                        'TransferOut_Price' => 0,
+
+                        'SAkhirUnit' => $LaporanSaldoAwals->SAwalUnit,
+                        'SAkhirQuantity' => $LaporanSaldoAwals->SAwalQuantity,
+                        'SAkhirPrice' => $LaporanSaldoAwals->SAwalPrice
+                    ]);
+            }
+
+
+
+            $LaporanSaldoAkhir = Laporan::select(
+                'KODE',
+                'NAMA',
+                'KODE_BARANG_SAGE',
+                'KODE_DESKRIPSI_BARANG_SAGE',
+                'STOKING_UNIT_BOM',
+
+                Laporan::raw('sum(Pembelian_Unit)as Pemunit'),
+                Laporan::raw('sum(Pembelian_Price)as Pemprice'),
+
+                Laporan::raw('sum(Penerimaan_Unit)as Peneunit'),
+                Laporan::raw('sum(Penerimaan_Price)as Peneprice'),
+
+                Laporan::raw('sum(Pengiriman_Unit)as pengiunit'),
+
+                Laporan::raw('sum(Bom_Unit)as Bomunit'),
+
+            )->groupBy('KODE', 'KODE_BARANG_SAGE')->whereDate('TANGGAL', '>=', $Tanggal_awal)->whereDate('TANGGAL', '<=', $Tanggal_akhir)->get();
+
+            foreach ($LaporanSaldoAkhir as $LaporanSaldoAkhirs) {
+
+                $temp = Laporanakhir::where('KODE', $LaporanSaldoAkhirs->KODE)->where('KODE_BARANG_SAGE', $LaporanSaldoAkhirs->KODE_BARANG_SAGE)
+                    ->update([
+
+                        'Pembelian_Unit' => $LaporanSaldoAkhirs->Pemunit,
+                        'Pembelian_Price' => $LaporanSaldoAkhirs->Pemprice,
+                        'Pembelian_Quantity' => Laporanakhir::raw(' IFNULL(Pembelian_Price / NULLIF( Pembelian_Unit, 0 ), 0)'),
+
+                        'Penerimaan_Unit' => $LaporanSaldoAkhirs->Peneunit,
+                        'Penerimaan_Price' => $LaporanSaldoAkhirs->Peneprice,
+                        'Penerimaan_Quantity' => Laporanakhir::raw(' IFNULL(Penerimaan_Price / NULLIF( Penerimaan_Unit, 0 ), 0)'),
+
+
+                        'TransferIn_Unit' => Laporanakhir::raw('IFNULL(SAwalUnit, 0)+ IFNULL(Pembelian_Unit, 0) +IFNULL(Penerimaan_Unit, 0)'),
+                        'TransferIn_Price' => Laporanakhir::raw('IFNULL(SAwalPrice, 0)+ IFNULL(Pembelian_Price, 0) +IFNULL(Penerimaan_Price, 0)'),
+                        'TransferIn_Quantity' => Laporanakhir::raw(' IFNULL(TransferIn_Price / NULLIF( TransferIn_Unit, 0 ), 0)'),
+
+
+                        'Pengiriman_Unit' => $LaporanSaldoAkhirs->pengiunit,
+                        'Pengiriman_Quantity' => Laporanakhir::raw('IF(Pengiriman_Unit IS NULL, 0, TransferIn_Quantity)'),
+                        'Pengiriman_Price' => Laporanakhir::raw('IFNULL(TransferIn_Quantity, 0) * IFNULL(Pengiriman_Unit, 0)'),
+
+
+                        'Bom_Unit' => $LaporanSaldoAkhirs->Bomunit,
+                        'Bom_Quantity' => Laporanakhir::raw('IF(Bom_Unit IS NULL, 0, TransferIn_Quantity)'),
+                        'Bom_Price' => Laporanakhir::raw('IFNULL(TransferIn_Quantity, 0) * IFNULL(Bom_Unit, 0)'),
+
+
+                        'TransferOut_Unit' => $LaporanSaldoAkhirs->pengiunit + $LaporanSaldoAkhirs->Bomunit,
+                        'TransferOut_Quantity' => Laporanakhir::raw('IF(TransferOut_Unit IS NULL, 0, TransferIn_Quantity) '),
+                        'TransferOut_Price' => Laporanakhir::raw('IFNULL(TransferIn_Quantity, 0) *IFNULL(TransferOut_Unit, 0)'),
+
+                        'SAkhirUnit' => Laporanakhir::raw('IFNULL(TransferIn_Unit, 0) - IFNULL(TransferOut_Unit, 0)  '),
+                        'SAkhirQuantity' => Laporanakhir::raw('TransferIn_Quantity'),
+                        'SAkhirPrice' => Laporanakhir::raw('TransferIn_Quantity * SAkhirUnit')
+
+                    ]);
+                if ($temp) {
+                    continue;
+                } else {
+                    Laporanakhir::create([
+                        'KODE' => $LaporanSaldoAkhirs->KODE,
+                        'NAMA' => $LaporanSaldoAkhirs->NAMA,
+                        'KODE_BARANG_SAGE' => $LaporanSaldoAkhirs->KODE_BARANG_SAGE,
+                        'KODE_DESKRIPSI_BARANG_SAGE' => $LaporanSaldoAkhirs->KODE_DESKRIPSI_BARANG_SAGE,
+                        'STOKING_UNIT_BOM' => $LaporanSaldoAkhirs->STOKING_UNIT_BOM,
+
+                        'Pembelian_Unit' => $LaporanSaldoAkhirs->Pemunit,
+                        'Pembelian_Price' => $LaporanSaldoAkhirs->Pemprice,
+                        'Pembelian_Quantity' => Laporanakhir::raw(' IFNULL(Pembelian_Price / NULLIF( Pembelian_Unit, 0 ), 0)'),
+
+                        'Penerimaan_Unit' => $LaporanSaldoAkhirs->Peneunit,
+                        'Penerimaan_Price' => $LaporanSaldoAkhirs->Peneprice,
+                        'Penerimaan_Quantity' => Laporanakhir::raw(' IFNULL(Penerimaan_Price / NULLIF( Penerimaan_Unit, 0 ), 0)'),
+
+                        'TransferIn_Unit' => Laporanakhir::raw('IFNULL(SAwalUnit, 0)+ IFNULL(Pembelian_Unit, 0) +IFNULL(Penerimaan_Unit, 0)'),
+                        'TransferIn_Price' => Laporanakhir::raw('IFNULL(SAwalPrice, 0)+ IFNULL(Pembelian_Price, 0) +IFNULL(Penerimaan_Price, 0)'),
+                        'TransferIn_Quantity' => Laporanakhir::raw(' IFNULL(TransferIn_Price / NULLIF( TransferIn_Unit, 0 ), 0)'),
+
+                        'Pengiriman_Unit' => $LaporanSaldoAkhirs->pengiunit,
+                        'Pengiriman_Quantity' => Laporanakhir::raw(' IF(Pengiriman_Unit IS NULL, 0, TransferIn_Quantity)'),
+                        'Pengiriman_Price' => Laporanakhir::raw('IFNULL(TransferIn_Quantity, 0) * IFNULL(Pengiriman_Unit, 0)'),
+
+                        'Bom_Unit' => $LaporanSaldoAkhirs->Bomunit,
+                        'Bom_Quantity' => Laporanakhir::raw('IF(Bom_Unit IS NULL, 0, TransferIn_Quantity)'),
+                        'Bom_Price' => Laporanakhir::raw('IFNULL(TransferIn_Quantity, 0) * IFNULL(Bom_Unit, 0)'),
+
+
+                        'TransferOut_Unit' => $LaporanSaldoAkhirs->pengiunit + $LaporanSaldoAkhirs->Bomunit,
+                        'TransferOut_Quantity' => Laporanakhir::raw(' IF(TransferOut_Unit IS NULL, 0, TransferIn_Quantity)'),
+                        'TransferOut_Price' => Laporanakhir::raw('IFNULL(TransferIn_Quantity, 0) *IFNULL(TransferOut_Unit, 0)'),
+
+
+                        'SAkhirUnit' => Laporanakhir::raw('IFNULL(TransferIn_Unit, 0) - IFNULL(TransferOut_Unit, 0)  '),
+                        'SAkhirQuantity' => Laporanakhir::raw(' IFNULL(TransferIn_Price / NULLIF( TransferIn_Unit, 0 ), 0)'),
+                        'SAkhirPrice' => Laporanakhir::raw('TransferIn_Quantity * SAkhirUnit')
+
+
+
+                    ]);
+                }
+            }
+
+
+
+            $UpdateBiayaLaporan = Laporanakhir::get();
+
+            foreach ($UpdateBiayaLaporan as $LaporanSaldoAwals) {
+                Laporanakhir::where('KODE', '<>', 7301)->where('KODE', '<>', 7302)
+                    ->where('KODE', '<', 9000)
+                    ->where(Laporanakhir::raw('LEFT(KODE_BARANG_SAGE,2)'), '<>', '12')
+                    ->where(Laporanakhir::raw('LEFT(KODE_BARANG_SAGE,2)'), '<>', '11')
+                    ->update([
+
+                        'BiayaUnit' => Laporanakhir::raw('IFNULL(TransferIn_Unit, 0)'),
+                        'BiayaQuantity' => Laporanakhir::raw('IFNULL(TransferIn_Quantity, 0)'),
+                        'BiayaPrice' => Laporanakhir::raw('IFNULL(TransferIn_Price, 0)'),
+
+                        'SAkhirUnit' => Laporanakhir::raw('(TransferIn_Unit - TransferOut_Unit) - TransferIn_Unit '),
+                        'SAkhirQuantity' => Laporanakhir::raw('TransferIn_Quantity '),
+                        'SAkhirPrice' => Laporanakhir::raw('SAkhirUnit*TransferIn_Quantity')
+                    ]);
+            }
+
+            $laporanakhirview = Laporanakhir::get();
+            return view('Laporansduas', compact('laporanakhirview'));
+        }
+
+        return redirect("/")->withSuccess('Opps! You do not have access');
+    }
+
     public function LaporanTanggal(Request $request)
+    {
+        if (Auth::check()) {
+            // menangkap data pencarian
+            $date = $request->date;
+            // Convertdprbom
+            Laporanakhir::truncate();
+
+            // SELECT `KODE`,`NAMA`,`KODE_BARANG_SAGE`,`KODE_DESKRIPSI_BARANG_SAGE`,sum(Pembelian_Unit),sum(Penerimaan_Unit),sum(Pengiriman_Unit),sum(Bom_Unit) FROM `laporans` WHERE `TANGGAL` < '2023-01-05' GROUP BY `KODE`,`KODE_BARANG_SAGE`;
+            // select menentukan saldo awal
+            $LaporanSaldoAwal = Laporan::whereDate('TANGGAL', '<', $date)->select(
+                'KODE',
+                'NAMA',
+                'KODE_BARANG_SAGE',
+                'KODE_DESKRIPSI_BARANG_SAGE',
+                'STOKING_UNIT_BOM',
+                Laporan::raw('sum(Pembelian_Unit)as Pemunit'),
+
+                Laporan::raw('sum(Penerimaan_Unit)as Peneunit'),
+
+                Laporan::raw('sum(Pengiriman_Unit)as pengiunit'),
+
+                Laporan::raw('sum(Bom_Unit)as Bomunit'),
+
+            )->groupBy('KODE', 'KODE_BARANG_SAGE')->get();
+
+            // memasukan nilai saldo awal
+            foreach ($LaporanSaldoAwal as $LaporanSaldoAwals) {
+                Laporanakhir::create([
+                    'KODE' => $LaporanSaldoAwals->KODE,
+                    'NAMA' => $LaporanSaldoAwals->NAMA,
+                    'KODE_BARANG_SAGE' => $LaporanSaldoAwals->KODE_BARANG_SAGE,
+                    'KODE_DESKRIPSI_BARANG_SAGE' => $LaporanSaldoAwals->KODE_DESKRIPSI_BARANG_SAGE,
+                    'STOKING_UNIT_BOM' => $LaporanSaldoAwals->STOKING_UNIT_BOM,
+
+                    'SAwalUnit' => ($LaporanSaldoAwals->Pemunit + $LaporanSaldoAwals->Peneunit) - ($LaporanSaldoAwals->pengiunit + $LaporanSaldoAwals->Bomunit)
+
+                ]);
+                Laporanakhir::where('KODE', '<>', 7301)->where('KODE', '<>', 7302)
+                    ->where('KODE', '<', 9000)
+                    ->where(Laporanakhir::raw('LEFT(KODE_BARANG_SAGE,2)'), '<>', '12')
+                    ->where(Laporanakhir::raw('LEFT(KODE_BARANG_SAGE,2)'), '<>', '11')
+                    ->update([
+
+                        'SAwalUnit' => (($LaporanSaldoAwals->Pemunit + $LaporanSaldoAwals->Peneunit) - ($LaporanSaldoAwals->pengiunit + $LaporanSaldoAwals->Bomunit)) - ($LaporanSaldoAwals->Pemunit + $LaporanSaldoAwals->Peneunit)
+
+                    ]);
+            }
+
+
+            $LaporanSaldoAkhir = Laporan::whereDate('TANGGAL', '=', $date)->select(
+                'KODE',
+                'NAMA',
+                'KODE_BARANG_SAGE',
+                'KODE_DESKRIPSI_BARANG_SAGE',
+                'STOKING_UNIT_BOM',
+
+                Laporan::raw('sum(Pembelian_Unit)as Pemunit'),
+
+                Laporan::raw('sum(Penerimaan_Unit)as Peneunit'),
+
+                Laporan::raw('sum(Pengiriman_Unit)as pengiunit'),
+
+                Laporan::raw('sum(Bom_Unit)as Bomunit'),
+
+            )->groupBy('KODE', 'KODE_BARANG_SAGE')->get();
+
+            foreach ($LaporanSaldoAkhir as $LaporanSaldoAkhirs) {
+
+                $temp = Laporanakhir::where('KODE', $LaporanSaldoAkhirs->KODE)->where('KODE_BARANG_SAGE', $LaporanSaldoAkhirs->KODE_BARANG_SAGE)
+                    ->update([
+                        'Pembelian_Unit' => $LaporanSaldoAkhirs->Pemunit,
+                        'Penerimaan_Unit' => $LaporanSaldoAkhirs->Peneunit,
+                        'TransferIn_Unit' => Laporanakhir::raw('IFNULL(SAwalUnit, 0)+ IFNULL(Pembelian_Unit, 0) +IFNULL(Penerimaan_Unit, 0)'),
+                        'Pengiriman_Unit' => $LaporanSaldoAkhirs->pengiunit,
+                        'Bom_Unit' => $LaporanSaldoAkhirs->Bomunit,
+                        'TransferOut_Unit' => $LaporanSaldoAkhirs->pengiunit + $LaporanSaldoAkhirs->Bomunit,
+                        'SAkhirUnit' => Laporanakhir::raw('IFNULL(TransferIn_Unit, 0) - IFNULL(TransferOut_Unit, 0)  '),
+                    ]);
+                if ($temp) {
+                    continue;
+                } else {
+                    Laporanakhir::create([
+                        'KODE' => $LaporanSaldoAkhirs->KODE,
+                        'NAMA' => $LaporanSaldoAkhirs->NAMA,
+                        'KODE_BARANG_SAGE' => $LaporanSaldoAkhirs->KODE_BARANG_SAGE,
+                        'KODE_DESKRIPSI_BARANG_SAGE' => $LaporanSaldoAkhirs->KODE_DESKRIPSI_BARANG_SAGE,
+                        'STOKING_UNIT_BOM' => $LaporanSaldoAkhirs->STOKING_UNIT_BOM,
+
+                        'Pembelian_Unit' => $LaporanSaldoAkhirs->Pemunit,
+                        'Penerimaan_Unit' => $LaporanSaldoAkhirs->Peneunit,
+                        'TransferIn_Unit' => ($LaporanSaldoAwals->Pemunit + $LaporanSaldoAwals->Peneunit),
+                        'Pengiriman_Unit' => $LaporanSaldoAkhirs->pengiunit,
+                        'Bom_Unit' => $LaporanSaldoAkhirs->Bomunit,
+                        'TransferOut_Unit' => $LaporanSaldoAkhirs->pengiunit + $LaporanSaldoAkhirs->Bomunit,
+                        'SAkhirUnit' => Laporanakhir::raw('IFNULL(TransferIn_Unit, 0) - IFNULL(TransferOut_Unit, 0)  '),
+                    ]);
+                }
+            }
+
+
+            $UpdateBiayaLaporanasd = Laporanakhir::get();
+
+            foreach ($UpdateBiayaLaporanasd as $LaporanSaldoAwalsasd) {
+                Laporanakhir::where('KODE', '<>', 7301)->where('KODE', '<>', 7302)
+                    ->where('KODE', '<', 9000)
+                    ->where(Laporanakhir::raw('LEFT(KODE_BARANG_SAGE,2)'), '<>', '12')
+                    ->where(Laporanakhir::raw('LEFT(KODE_BARANG_SAGE,2)'), '<>', '11')
+                    ->update([
+                        'BiayaUnit' => Laporanakhir::raw('IFNULL(TransferIn_Unit, 0)'),
+                        'SAkhirUnit' => Laporanakhir::raw('(TransferIn_Unit - TransferOut_Unit) - TransferIn_Unit '),
+                    ]);
+            }
+
+            $UpdateLaporanharia2n = Laporan::whereDate('TANGGAL', '<=', $date)->select(
+                'KODE',
+                'KODE_BARANG_SAGE',
+                Laporan::raw('ROUND((sum(Pembelian_Price)) /(sum(Pembelian_Unit)),2) as harga')
+
+            )->groupBy('KODE', 'KODE_BARANG_SAGE')->get();
+            foreach ($UpdateLaporanharia2n as $UpdateLaporanharians2) {
+                Laporanakhir::where('KODE', $UpdateLaporanharians2->KODE)->where('KODE_BARANG_SAGE', $UpdateLaporanharians2->KODE_BARANG_SAGE)
+                    ->update([
+
+                        'SAwalQuantity' => $UpdateLaporanharians2->harga,
+                        'SAwalPrice' => Laporanakhir::raw('ROUND(SAwalQuantity * SAwalUnit,2)'),
+                        'SAkhirPrice' => Laporanakhir::raw('ROUND(SAwalQuantity * SAkhirUnit,2)')
+                    ]);
+            }
+
+            $laporanakhirview = Laporanakhir::get();
+            return view('Laporans', compact('laporanakhirview'));
+        }
+
+        return redirect("/")->withSuccess('Opps! You do not have access');
+    }
+
+
+
+
+
+    public function Laporanhppstanggal(Request $request)
+    {
+        if (Auth::check()) {
+            // menangkap data pencarian
+            $Tanggal = $request->date;
+            $cari = $request->cari;
+            Convertbom::truncate();
+            Laporanhpp::truncate();
+
+            /*
+
+                $dprrckbomhargabarang = Dprrckbom::select(
+                    'dprrckboms.KODE_BARANG',
+                    Dprrckbom::raw('sum(dprrckboms.Harga) as Harga1')
+                )->groupBy('dprrckboms.KODE_BARANG')->get();
+
+                foreach ($dprrckbomhargabarang as $dprrckbomhargabarangs) {
+                    Dprrckbom::where('KODE_BARANG', $dprrckbomhargabarangs->KODE_BARANG)
+                        ->update(['dprrckboms.HargaBarang' => $dprrckbomhargabarangs->Harga1]);
+                }
+
+                $dprbomhargabarang = Dprbom::select(
+                    'dprboms.KODE_BARANG',
+                    Dprbom::raw('sum(dprboms.Harga) as Harga1')
+                )->groupBy('dprboms.KODE_BARANG')->get();
+
+                foreach ($dprbomhargabarang as $dprbomhargabarangs) {
+                    Dprbom::where('KODE_BARANG', $dprbomhargabarangs->KODE_BARANG)
+                        ->update(['dprboms.HargaBarang' => $dprbomhargabarangs->Harga1]);
+                }
+
+
+                $items1123 = Item::select('dprrckboms.NAMA_BARANG', 'dprrckboms.HargaBarang')->join(
+                    'dprrckboms',
+                    'items.KODE_DESKRIPSI_BARANG_SAGE',
+                    '=',
+                    'dprrckboms.NAMA_BARANG'
+                )->get();
+
+                foreach ($items1123 as $itemss1123) {
+                    Item::where('KODE_DESKRIPSI_BARANG_SAGE', $itemss1123->NAMA_BARANG)->update(['items.Harga' => $itemss1123->HargaBarang]);
+                }
+
+                $items11234 = Item::select('dprboms.NAMA_BARANG', 'dprboms.HargaBarang')->join(
+                    'dprboms',
+                    'items.KODE_DESKRIPSI_BARANG_SAGE',
+                    '=',
+                    'dprboms.NAMA_BARANG'
+                )->get();
+
+                foreach ($items11234 as $itemss11234) {
+                    Item::where('KODE_DESKRIPSI_BARANG_SAGE', $itemss11234->NAMA_BARANG)->update(['items.Harga' => $itemss11234->HargaBarang]);
+                }
+
+                $bom2 = Bom::select('boms.NAMA_BAHAN', 'items.Harga')->join(
+                    'items',
+                    'items.KODE_DESKRIPSI_BARANG_SAGE',
+                    '=',
+                    'boms.NAMA_BAHAN'
+                )->groupBy('boms.NAMA_BAHAN')->get();
+                foreach ($bom2 as $bom2s) {
+                    Bom::where('NAMA_BAHAN', $bom2s->NAMA_BAHAN)
+                        ->update(['boms.Harga' => $bom2s->Harga]);
+                }
+
+                $bom3 = Bom::select(
+                    'boms.KODE_BARANG',
+                    Bom::raw('sum(boms.Harga) as Harga2')
+                )->groupBy('boms.KODE_BARANG')->get();
+
+                foreach ($bom3 as $bom3s) {
+                    Bom::where('KODE_BARANG', $bom3s->KODE_BARANG)
+                        ->update(['boms.HargaBarang' => $bom3s->Harga2]);
+                }
+
+                */
+
+            $Boms23 =  Penjualan::whereDate('TANGGAL', '=', $Tanggal)->where('penjualans.KODE_OUTLET', '=',  $cari)->select(
+                'penjualans.TANGGAL',
+                'penjualans.KODE_OUTLET',
+                'penjualans.Outlet',
+                'penjualans.KODE_BARANG',
+                'penjualans.Barang',
+                'penjualans.Banyak',
+                'penjualans.Jumlah'
+            )->get();
+
+            $datalaporanpenjualan = [];
+            foreach ($Boms23 as $Boms23s) {
+                if ($Boms23s->Banyak != 0) {
+                    $datalaporanpenjualan = [
+                        'TANGGAL' => $Boms23s->TANGGAL,
+                        'KODE_OUTLET' => $Boms23s->KODE_OUTLET,
+                        'Outlet' => $Boms23s->Outlet,
+                        'KODE_BARANG' => $Boms23s->KODE_BARANG,
+                        'Barang' => $Boms23s->Barang,
+                        'Banyak' => $Boms23s->Banyak,
+                        'Jumlah' => $Boms23s->Jumlah,
+                        'Revenue' => $Boms23s->Jumlah / 1.1
+                    ];
+                    Laporanhpp::insert($datalaporanpenjualan);
+                }
+            }
+
+            $harga = Laporan::whereDate('TANGGAL', '<=', $Tanggal)->select(
+                'KODE',
+                'KODE_BARANG_SAGE',
+                Laporan::raw('(sum(Pembelian_Price)) /(sum(Pembelian_Unit)) as harga')
+
+            )->groupBy('KODE', 'KODE_BARANG_SAGE')->get();
+
+
+            foreach ($harga as $items1234s) {
+                Dprrckbom::where('dprrckboms.KODE_BAHAN', 'LIKE', '%' . $items1234s->KODE_BARANG_SAGE . '%')
+                    ->update(['dprrckboms.Harga' => $items1234s->harga]);
+
+                Dprbom::where('dprboms.KODE_BAHAN', 'LIKE', '%' . $items1234s->KODE_BARANG_SAGE . '%')
+                    ->update(['dprboms.Harga' => $items1234s->harga]);
+
+                Bom::where('boms.KODE_BAHAN', 'LIKE', '%' . $items1234s->KODE_BARANG_SAGE . '%')
+                    ->update(['boms.Harga' => $items1234s->harga]);
+            }
+
+
+            /*memasukan nilai harga pada bahan baku bom dapur racik dari pembelian */
+            /*
+            $items1234 = Item::join(
+                'pembelians',
+                'pembelians.KD_BRG',
+                '=',
+                'items.KODE_BARANG_PURCHASING'
+            )->select(
+                'items.KODE_BARANG_PURCHASING',
+                Item::raw('round(sum(pembelians.JUMLAH)/((sum(pembelians.BANYAK) * items.RUMUS_Untuk_Purchase) / items.RUMUS_untuk_BOM),2) as Harga123')
+            )->groupBy('pembelians.KD_BRG')->get();
+
+            foreach ($items1234 as $items1234s) {
+                Item::where('KODE_BARANG_PURCHASING', $items1234s->KODE_BARANG_PURCHASING)
+                    ->update(['items.Harga' => $items1234s->Harga123]);
+            }
+
+            $dprrckbomhargabahan = Dprrckbom::join('items', 'items.KODE_BARANG_SAGE', '=', Dprrckbom::raw('RIGHT(dprrckboms.KODE_BAHAN,11)'))
+                ->where('items.Harga', '!=', null)->select(
+                    'dprrckboms.KODE_BAHAN',
+                    'items.Harga as Harga2'
+                )
+                ->get();
+
+            foreach ($dprrckbomhargabahan as $dprrckbomhargabahans) {
+                Dprrckbom::where('KODE_BAHAN', $dprrckbomhargabahans->KODE_BAHAN)
+                    ->update(['dprrckboms.Harga' => $dprrckbomhargabahans->Harga2]);
+            }
+
+            $dprbomitem = Dprbom::join('items', 'items.KODE_BARANG_SAGE', '=',  Dprbom::raw('RIGHT(dprboms.KODE_BAHAN,11)'))
+                ->where('items.Harga', '!=', null)->select(
+                    'dprboms.KODE_BAHAN',
+                    'items.Harga as Harga22'
+                )->get();
+
+            foreach ($dprbomitem as $dprbomitems) {
+                Dprbom::where('KODE_BAHAN', $dprbomitems->KODE_BAHAN)->update(['dprboms.Harga' => $dprbomitems->Harga22]);
+            }
+
+            $bom12322 = Bom::join('items', 'items.KODE_DESKRIPSI_BARANG_SAGE', '=', 'boms.NAMA_BAHAN')
+                ->where('items.Harga', '!=', null)->select(
+                    'boms.NAMA_BAHAN',
+                    'items.Harga as Harga12'
+                )->get();
+
+            foreach ($bom12322 as $bom12322s) {
+                Bom::where('NAMA_BAHAN', $bom12322s->NAMA_BAHAN)->update(['boms.Harga' => $bom12322s->Harga12]);
+            }
+            $Boms1 = Laporanhpp::join(
+                'boms',
+                Laporanhpp::raw('RIGHT(boms.KODE_BARANG,13)'),
+                '=',
+                'laporanhpps.KODE_BARANG'
+            )->select(
+                'laporanhpps.TANGGAL',
+                'laporanhpps.KODE_OUTLET',
+                'laporanhpps.Outlet',
+                'boms.NAMA_BAHAN',
+                'boms.NAMA_BARANG',
+                'boms.SATUAN_BAHAN',
+                Laporanhpp::raw('laporanhpps.Banyak *boms.BANYAK as quantit2y ')
+            )->get();
+
+            $dataconvertboms = [];
+            foreach ($Boms1 as $Boms11) {
+                $dataconvertboms = [
+                    'TANGGAL' => $Boms11->TANGGAL,
+                    'KODE' => $Boms11->KODE_OUTLET,
+                    'NAMA' => $Boms11->Outlet,
+                    'KODE_BARANG_SAGE' => $Boms11->NAMA_BAHAN,
+                    'KODE_DESKRIPSI_BARANG_SAGE' => $Boms11->NAMA_BARANG,
+                    'STOKING_UNIT_BOM' => $Boms11->SATUAN_BAHAN,
+                    'QUANTITY' => $Boms11->quantit2y,
+                    'HARGA' => 0,
+                    'JUMLAH' => 0
+                ];
+                Convertbom::insert($dataconvertboms);
+            }*/
+
+
+
+            /*memasukan nilai harga pada bahan jadi bom dapur racik dari penjunmlahan bahan baku dapur racik */
+            $dprrckbomhargabarang = Dprrckbom::select(
+                'dprrckboms.KODE_BARANG',
+                Dprrckbom::raw('round(sum(dprrckboms.Harga),2) as Harga2')
+            )->groupBy('dprrckboms.KODE_BARANG')->get();
+
+            foreach ($dprrckbomhargabarang as $dprrckbomhargabarangs) {
+                Dprrckbom::where('KODE_BARANG', $dprrckbomhargabarangs->KODE_BARANG)
+                    ->update(['dprrckboms.HargaBarang' => $dprrckbomhargabarangs->Harga2]);
+            }
+
+            $dprbom = Dprrckbom::select(
+                Dprrckbom::raw('RIGHT(dprrckboms.KODE_BARANG, 11) as kode'),
+                'dprrckboms.HargaBarang'
+            )->get();
+
+
+            /*memasukan nilai harga pada bahan baku bom dapur pusat dari bahan jadi dapur racik */
+            foreach ($dprbom as $dprboms) {
+                Dprbom::where('dprboms.KODE_BAHAN', 'LIKE', '%' .  $dprboms->kode . '%')->update(['dprboms.Harga' => $dprboms->HargaBarang]);
+                Bom::where('boms.KODE_BAHAN', 'LIKE', '%' . $dprboms->kode . '%')->update(['boms.Harga' => $dprboms->HargaBarang]);
+            }
+
+
+            $dprbomhargabarang = Dprbom::select(
+                'dprboms.KODE_BARANG',
+                Dprbom::raw('round(sum(dprboms.Harga),2) as Harga2')
+            )->groupBy('dprboms.KODE_BARANG')->get();
+
+            /*memasukan nilai harga pada bahan jadi bom dapur pusat dari penjunmlahan bahan baku dapur pusat */
+            foreach ($dprbomhargabarang as $dprbomhargabarangs) {
+                Dprbom::where('KODE_BARANG', $dprbomhargabarangs->KODE_BARANG)->update(['dprboms.HargaBarang' => $dprbomhargabarangs->Harga2]);
+            }
+
+            $harga2123 = Dprbom::select(
+                'dprboms.HargaBarang',
+                Dprbom::raw('RIGHT(dprboms.KODE_BARANG, 11) as kode'),
+            )->get();
+
+            /*memasukan nilai harga pada bahan baku bom dapur pusat dari bahan jadi dapur racik */
+            foreach ($harga2123 as $harga2123s) {
+                Bom::where('boms.KODE_BAHAN', 'LIKE', '%' . $harga2123s->kode . '%')->update(['boms.Harga' => $harga2123s->HargaBarang]);
+            }
+
+            $bomharga = Bom::select(
+                'boms.KODE_BARANG',
+                Bom::raw('round(sum(boms.Harga),2) as Harga2')
+            )->groupBy('boms.KODE_BARANG')->get();
+
+            /*memasukan nilai harga pada bahan jadi bom dapur pusat dari penjunmlahan bahan baku dapur pusat */
+            foreach ($bomharga as $bomhargas) {
+                Bom::where('KODE_BARANG', $bomhargas->KODE_BARANG)->update(['boms.HargaBarang' => $bomhargas->Harga2]);
+            }
+
+            /*
+                $bom1234 = Convertbom::join('boms', 'boms.NAMA_BAHAN', '=', 'convertboms.KODE_BARANG_SAGE')
+                    ->select(
+                        'convertboms.KODE_BARANG_SAGE',
+                        Convertbom::raw('convertboms.QUANTITY *items.Harga as harga22 ')
+                    )->get();
+                foreach ($bom1234 as $bom1234s) {
+                    Convertbom::where('KODE_BARANG_SAGE', $bom1234s->KODE_BARANG_SAGE)
+                        ->update(['HARGA' => $bom1234s->harga22]);
+                }
+
+                $bom1234sum = Convertbom::select(
+                    'convertboms.KODE_DESKRIPSI_BARANG_SAGE',
+                    Convertbom::raw('sum(convertboms.HARGA) as Harga21')
+                )->groupBy(
+                    'convertboms.KODE_DESKRIPSI_BARANG_SAGE'
+                )->get();
+
+                foreach ($bom1234sum as $bom1234sums) {
+                    Convertbom::where('KODE_DESKRIPSI_BARANG_SAGE', $bom1234sums->KODE_DESKRIPSI_BARANG_SAGE)
+                        ->update(['JUMLAH' => $bom1234sums->Harga21]);
+                }
+            */
+
+            $Bomslaporanhpp = Laporanhpp::join('boms', Laporanhpp::raw('RIGHT(boms.KODE_BARANG, 11)'), '=', 'laporanhpps.KODE_BARANG')
+                ->select(
+                    'laporanhpps.KODE_BARANG',
+                    'laporanhpps.Banyak',
+                    'laporanhpps.Jumlah',
+                    Laporanhpp::raw('round(laporanhpps.Revenue,2) as newrevenue'),
+                    'boms.HargaBarang as jumlah21'
+                )->get();
+
+            foreach ($Bomslaporanhpp as $Bomslaporanhpps) {
+                Laporanhpp::where('KODE_BARANG', $Bomslaporanhpps->KODE_BARANG)->update([
+                    'Revenue' => $Bomslaporanhpps->newrevenue,
+                    'COGS' => $Bomslaporanhpps->jumlah21 * $Bomslaporanhpps->Banyak,
+                    'Profit' => $Bomslaporanhpps->newrevenue - ($Bomslaporanhpps->jumlah21 * $Bomslaporanhpps->Banyak),
+                    'Margin' => (($Bomslaporanhpps->newrevenue - ($Bomslaporanhpps->jumlah21 * $Bomslaporanhpps->Banyak)) / $Bomslaporanhpps->newrevenue) * 100
+                ]);
+            }
+
+
+            $penjualanss = Laporanhpp::get();
+            return view('Laporanhpps', compact('penjualanss'));
+        }
+
+        return redirect("/")->withSuccess('Opps! You do not have access');
+    }
+
+    public function carilaporan(Request $request)
+    {
+        if (Auth::check()) {
+            $cari = $request->cari;
+            $laporanakhirview = Laporanakhir::where('KODE', $cari)->get();
+            return view('Laporans', compact('laporanakhirview'));
+        }
+
+        return redirect("/")->withSuccess('Opps! You do not have access');
+    }
+
+    /*
+    //penerimaan dari
+
+        $penerimaan = Convertpenerimaan::select(
+            'convertpenerimaans.TANGGAL',
+            'convertpenerimaans.DARI',
+            'convertpenerimaans.NAMADARI',
+            'convertpenerimaans.KODE_BARANG_SAGE',
+            'convertpenerimaans.KODE_DESKRIPSI_BARANG_SAGE',
+            'convertpenerimaans.STOKING_UNIT_BOM',
+            Convertpenerimaan::raw('sum(convertpenerimaans.QUANTITY) as unit'),
+            'convertpenerimaans.HARGA',
+            'convertpenerimaans.JUMLAH',
+        )->groupBy('convertpenerimaans.TANGGAL', 'convertpenerimaans.DARI', 'convertpenerimaans.KODE_BARANG_SAGE')->get();
+
+        foreach ($penerimaan as $Boms11) {
+            $temp = Laporan::Where('TANGGAL', $Boms11->TANGGAL)->where('KODE', $Boms11->DARI)->where('KODE_BARANG_SAGE', $Boms11->KODE_BARANG_SAGE)
+                ->update([
+                    'Penerimaan_Unit' => $Boms11->unit, 'Penerimaan_Quantity' => $Boms11->HARGA,
+                    'Penerimaan_Price' => $Boms11->JUMLAH, 'Pengiriman_Unit' => $Boms11->unit
+                ]);
+            if ($temp) {
+                continue;
+            } else {
+                Laporan::where('TANGGAL', '!=', $Boms11->TANGGAL)->where('KODE', '!=', $Boms11->DARI)->where('KODE_BARANG_SAGE', '!=', $Boms11->KODE_BARANG_SAGE)
+                    ->create([
+                        'TANGGAL' => $Boms11->TANGGAL,
+                        'KODE' => $Boms11->DARI,
+                        'NAMA' => $Boms11->NAMADARI,
+                        'KODE_BARANG_SAGE' => $Boms11->KODE_BARANG_SAGE,
+                        'KODE_DESKRIPSI_BARANG_SAGE' => $Boms11->KODE_DESKRIPSI_BARANG_SAGE,
+                        'STOKING_UNIT_BOM' => $Boms11->STOKING_UNIT_BOM,
+                        'Penerimaan_Unit' => $Boms11->unit,
+                        'Penerimaan_Quantity' => $Boms11->HARGA,
+                        'Penerimaan_Price' => $Boms11->JUMLAH,
+                        'Pengiriman_Unit' => $Boms11->unit
+                    ]);
+            }
+        }
+        // penerimaan penerima
+        $penerimaan2 = Convertpenerimaan::select(
+            'convertpenerimaans.TANGGAL',
+            'convertpenerimaans.PENERIMA',
+            'convertpenerimaans.NAMAPENERIMA',
+            'convertpenerimaans.KODE_BARANG_SAGE',
+            'convertpenerimaans.KODE_DESKRIPSI_BARANG_SAGE',
+            'convertpenerimaans.STOKING_UNIT_BOM',
+            Convertpenerimaan::raw('sum(convertpenerimaans.QUANTITY) as unit'),
+            'convertpenerimaans.HARGA',
+            'convertpenerimaans.JUMLAH',
+        )->groupBy('convertpenerimaans.TANGGAL', 'convertpenerimaans.PENERIMA', 'convertpenerimaans.KODE_BARANG_SAGE')->get();
+
+        foreach ($penerimaan2 as $Boms112) {
+            $temp = Laporan::where('TANGGAL', $Boms112->TANGGAL)->where('KODE', $Boms112->PENERIMA)->where('KODE_BARANG_SAGE', $Boms112->KODE_BARANG_SAGE)
+                ->update([
+                    'Penerimaan_Unit' => $Boms112->unit, 'Penerimaan_Quantity' => $Boms112->HARGA,
+                    'Penerimaan_Price' => $Boms112->JUMLAH
+                ]);
+            if ($temp) {
+                continue;
+            } else {
+                Laporan::create([
+                    'TANGGAL' => $Boms112->TANGGAL,
+                    'KODE' => $Boms112->PENERIMA,
+                    'NAMA' => $Boms112->NAMAPENERIMA,
+                    'KODE_BARANG_SAGE' => $Boms112->KODE_BARANG_SAGE,
+                    'KODE_DESKRIPSI_BARANG_SAGE' => $Boms112->KODE_DESKRIPSI_BARANG_SAGE,
+                    'STOKING_UNIT_BOM' => $Boms112->STOKING_UNIT_BOM,
+                    'Penerimaan_Unit' => $Boms112->unit,
+                    'Penerimaan_Quantity' => $Boms112->HARGA,
+                    'Penerimaan_Price' => $Boms112->JUMLAH,
+                ]);
+            }
+        }
+
+
+        //pembelian
+        $pembelian = Convertpembelian::get();
+
+        foreach ($pembelian as $pembelians) {
+            $temp = Laporan::where('TANGGAL', $pembelians->TANGGAL)->where('KODE', $pembelians->KODE)->where('KODE_BARANG_SAGE', $pembelians->KODE_BARANG_SAGE)
+                ->update([
+                    'Pembelian_Unit' => $pembelians->QUANTITY, 'Pembelian_Quantity' => $pembelians->HARGA,
+                    'Pembelian_Price' => $pembelians->JUMLAH
+                ]);
+            if ($temp) {
+                continue;
+            } else {
+                Laporan::where('TANGGAL', '!=', $pembelians->TANGGAL)->Where('KODE', '!=', $pembelians->KODE)->Where('KODE_BARANG_SAGE', '!=', $pembelians->KODE_BARANG_SAGE)->create([
+                    'TANGGAL' => $pembelians->TANGGAL,
+                    'KODE' => $pembelians->KODE,
+                    'NAMA' => $pembelians->NAMA,
+                    'KODE_BARANG_SAGE' => $pembelians->KODE_BARANG_SAGE,
+                    'KODE_DESKRIPSI_BARANG_SAGE' => $pembelians->KODE_DESKRIPSI_BARANG_SAGE,
+                    'STOKING_UNIT_BOM' => $pembelians->STOKING_UNIT_BOM,
+                    'Pembelian_Unit' => $pembelians->QUANTITY,
+                    'Pembelian_Quantity' => $pembelians->HARGA,
+                    'Pembelian_Price' => $pembelians->JUMLAH,
+                ]);
+            }
+        }
+
+        //bom
+        $bomconvert = Convertbom::select(
+            'convertboms.TANGGAL',
+            'convertboms.KODE',
+            'convertboms.NAMA',
+            'convertboms.KODE_BARANG_SAGE',
+            'convertboms.KODE_DESKRIPSI_BARANG_SAGE',
+            'convertboms.STOKING_UNIT_BOM',
+            Convertpenerimaan::raw('sum(convertboms.QUANTITY) as unit'),
+        )->groupBy('convertboms.TANGGAL', 'convertboms.KODE', 'convertboms.KODE_BARANG_SAGE')->get();
+
+        foreach ($bomconvert as $Bomsconvert1132) {
+            $temp = Laporan::where('TANGGAL', $Bomsconvert1132->TANGGAL)->where('KODE', $Bomsconvert1132->KODE)->where('KODE_BARANG_SAGE', $Bomsconvert1132->KODE_BARANG_SAGE)
+                ->update([
+                    'Bom_Unit' => $Bomsconvert1132->unit
+                ]);
+            if ($temp) {
+                continue;
+            } else {
+                Laporan::create([
+                    'TANGGAL' => $Bomsconvert1132->TANGGAL,
+                    'KODE' => $Bomsconvert1132->KODE,
+                    'NAMA' => $Bomsconvert1132->NAMA,
+                    'KODE_BARANG_SAGE' => $Bomsconvert1132->KODE_BARANG_SAGE,
+                    'KODE_DESKRIPSI_BARANG_SAGE' => $Bomsconvert1132->KODE_DESKRIPSI_BARANG_SAGE,
+                    'STOKING_UNIT_BOM' => $Bomsconvert1132->STOKING_UNIT_BOM,
+                    'Bom_Unit' => $Bomsconvert1132->unit,
+                ]);
+            }
+        }
+
+        $saldoawallaporan = Laporan::get();
+        foreach ($saldoawallaporan as $saldoawallaporans) {
+            Saldoawal::create([
+                'KODE' => $saldoawallaporans->KODE,
+                'NAMA' => $saldoawallaporans->NAMA,
+                'KODE_BARANG_SAGE' => $saldoawallaporans->KODE_BARANG_SAGE,
+                'KODE_DESKRIPSI_BARANG_SAGE' => $saldoawallaporans->KODE_DESKRIPSI_BARANG_SAGE,
+                'STOKING_UNIT_BOM' => $saldoawallaporans->STOKING_UNIT_BOM,
+                'SAwalUnit' => 0,
+                'SAwalQuantity' => 0,
+                'SAwalPrice' => 0
+            ]);
+        }
+
+        //Transin Trans OUT SALDO AKHIR
+        $laporansdatates = Laporan::orderBy('TANGGAL', 'ASC')->get();
+        foreach ($laporansdatates as $Laporandata1s) {
+            Laporan::Where('laporans.TANGGAL', $Laporandata1s->TANGGAL)->where('laporans.KODE', $Laporandata1s->KODE)->where('laporans.KODE_BARANG_SAGE', $Laporandata1s->KODE_BARANG_SAGE)
+                ->join('saldoawals', function ($join) {
+                    $join->on(
+                        'saldoawals.KODE',
+                        '=',
+                        'laporans.KODE'
+                    )->on(
+                        'saldoawals.KODE_BARANG_SAGE',
+                        '=',
+                        'laporans.KODE_BARANG_SAGE'
+                    );
+                })->update([
+
+                    // saldo awal bikin tabel baru yang isi nya kode, kode sage dll gapake tanggal, isinya di update terus sesuai saldo akhir
+                    // pake join sebelum update nya pake tabel yang baru
+
+                    'laporans.SAwalUnit' => Laporan::raw('saldoawals.SAwalUnit'),
+                    'laporans.SAwalQuantity' => Laporan::raw('saldoawals.SAwalQuantity'),
+                    'laporans.SAwalPrice' => Laporan::raw('saldoawals.SAwalPrice'),
+
+                    'laporans.TransferIn_Unit' => $Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit,
+                    'laporans.TransferIn_Price' => $Laporandata1s->SAwalPrice + $Laporandata1s->Pembelian_Price + $Laporandata1s->Penerimaan_Price,
+                    'laporans.TransferIn_Quantity' => ($Laporandata1s->SAwalPrice + $Laporandata1s->Pembelian_Price + $Laporandata1s->Penerimaan_Price) / ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit),
+
+                    'laporans.Pengiriman_Quantity' => ($Laporandata1s->SAwalPrice + $Laporandata1s->Pembelian_Price + $Laporandata1s->Penerimaan_Price) / ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit),
+                    'laporans.Pengiriman_Price' => (($Laporandata1s->SAwalPrice + $Laporandata1s->Pembelian_Price + $Laporandata1s->Penerimaan_Price) / ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit)) *  $Laporandata1s->Pengiriman_Unit,
+
+                    'laporans.Bom_Quantity' => ($Laporandata1s->SAwalPrice + $Laporandata1s->Pembelian_Price + $Laporandata1s->Penerimaan_Price) / ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit),
+                    'laporans.Bom_Price' => (($Laporandata1s->SAwalPrice + $Laporandata1s->Pembelian_Price + $Laporandata1s->Penerimaan_Price) / ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit)) *  $Laporandata1s->Bom_Unit,
+
+                    'laporans.TransferOut_Unit' => $Laporandata1s->Pengiriman_Unit + $Laporandata1s->Bom_Unit,
+                    'laporans.TransferOut_Quantity' => ($Laporandata1s->SAwalPrice + $Laporandata1s->Pembelian_Price + $Laporandata1s->Penerimaan_Price) / ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit),
+                    'laporans.TransferOut_Price' => (($Laporandata1s->SAwalPrice + $Laporandata1s->Pembelian_Price + $Laporandata1s->Penerimaan_Price) / ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit)) * ($Laporandata1s->Pengiriman_Unit + $Laporandata1s->Bom_Unit),
+
+                    'laporans.SAkhirUnit' => ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit) - ($Laporandata1s->Pengiriman_Unit + $Laporandata1s->Bom_Unit),
+                    'laporans.SAkhirQuantity' => ($Laporandata1s->SAwalPrice + $Laporandata1s->Pembelian_Price + $Laporandata1s->Penerimaan_Price) / ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit),
+                    'laporans.SAkhirPrice' => (($Laporandata1s->SAwalPrice + $Laporandata1s->Pembelian_Price + $Laporandata1s->Penerimaan_Price) / ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit)) * (($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit) - ($Laporandata1s->Pengiriman_Unit + $Laporandata1s->Bom_Unit)),
+
+                    'saldoawals.SAwalUnit' => ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit) - ($Laporandata1s->Pengiriman_Unit + $Laporandata1s->Bom_Unit),
+                    'saldoawals.SAwalQuantity' => ($Laporandata1s->SAwalPrice + $Laporandata1s->Pembelian_Price + $Laporandata1s->Penerimaan_Price) / ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit),
+                    'saldoawals.SAwalPrice' => (($Laporandata1s->SAwalPrice + $Laporandata1s->Pembelian_Price + $Laporandata1s->Penerimaan_Price) / ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit)) * (($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit) - ($Laporandata1s->Pengiriman_Unit + $Laporandata1s->Bom_Unit)),
+
+                ]);
+        }
+
+         public function LaporanTanggal(Request $request)
     {
         if (Auth::check()) {
             // menangkap data pencarian
@@ -621,632 +1504,6 @@ class BomController extends Controller
 
             $laporanakhirview = Laporanakhir::get();
             return view('Laporans', compact('laporanakhirview'));
-        }
-
-        return redirect("/")->withSuccess('Opps! You do not have access');
-    }
-
-    public function LaporanTanggaldua(Request $request)
-    {
-        if (Auth::check()) {
-            // menangkap data pencarian
-            $Tanggal_awal = $request->Tanggal_awal;
-            $Tanggal_akhir = $request->Tanggal_akhir;
-
-            // Convertdprbom
-            Laporanakhir::truncate();
-
-            // SELECT `KODE`,`NAMA`,`KODE_BARANG_SAGE`,`KODE_DESKRIPSI_BARANG_SAGE`,sum(Pembelian_Unit),sum(Penerimaan_Unit),sum(Pengiriman_Unit),sum(Bom_Unit) FROM `laporans` WHERE `TANGGAL` < '2023-01-05' GROUP BY `KODE`,`KODE_BARANG_SAGE`;
-            $LaporanSaldoAwal = Laporan::select(
-                'KODE',
-                'NAMA',
-                'KODE_BARANG_SAGE',
-                'KODE_DESKRIPSI_BARANG_SAGE',
-                'STOKING_UNIT_BOM',
-                Laporan::raw('sum(Pembelian_Unit)as Pemunit'),
-                Laporan::raw('sum(Pembelian_Price)as Pemprice'),
-
-                Laporan::raw('sum(Penerimaan_Unit)as Peneunit'),
-                Laporan::raw('sum(Penerimaan_Price)as Peneprice'),
-
-                Laporan::raw('sum(Pengiriman_Unit)as pengiunit'),
-
-                Laporan::raw('sum(Bom_Unit)as Bomunit'),
-
-            )->groupBy('KODE', 'KODE_BARANG_SAGE')->whereDate('TANGGAL', '<', $Tanggal_awal)->get();
-
-            foreach ($LaporanSaldoAwal as $LaporanSaldoAwals) {
-                Laporanakhir::create([
-                    'KODE' => $LaporanSaldoAwals->KODE,
-                    'NAMA' => $LaporanSaldoAwals->NAMA,
-                    'KODE_BARANG_SAGE' => $LaporanSaldoAwals->KODE_BARANG_SAGE,
-                    'KODE_DESKRIPSI_BARANG_SAGE' => $LaporanSaldoAwals->KODE_DESKRIPSI_BARANG_SAGE,
-                    'STOKING_UNIT_BOM' => $LaporanSaldoAwals->STOKING_UNIT_BOM,
-
-                    'SAkhirUnit' => $LaporanSaldoAwals->Pemunit + $LaporanSaldoAwals->Peneunit,
-                    'SAkhirPrice' => $LaporanSaldoAwals->Pemprice + $LaporanSaldoAwals->Peneprice,
-
-                    'SAkhirQuantity' => Laporanakhir::raw('IFNULL(SAkhirPrice / NULLIF( SAkhirUnit, 0 ), 0)  '),
-
-                    'Pengiriman_Price' => $LaporanSaldoAwals->pengiunit,
-                    'Bom_Price' => $LaporanSaldoAwals->Bomunit,
-
-                    'SAwalUnit' => ($LaporanSaldoAwals->Pemunit + $LaporanSaldoAwals->Peneunit) - ($LaporanSaldoAwals->pengiunit + $LaporanSaldoAwals->Bomunit),
-                    'SAwalPrice' => Laporanakhir::raw('SAkhirPrice - ((SAkhirQuantity * IFNULL( Pengiriman_Price, 0 )) +( SAkhirQuantity * IFNULL( Bom_Price, 0 )))'),
-                    'SAwalQuantity' => Laporanakhir::raw('IFNULL(SAwalPrice / NULLIF( SAwalUnit, 0 ), 0)')
-                ]);
-            }
-
-            $UpdateBiayaLaporan1 = Laporanakhir::get();
-
-            foreach ($UpdateBiayaLaporan1 as $LaporanSaldoAwals123) {
-                Laporanakhir::where('KODE', '<>', 7301)->where('KODE', '<>', 7302)
-                    ->where('KODE', '<', 9000)
-                    ->where(Laporanakhir::raw('LEFT(KODE_BARANG_SAGE,2)'), '<>', '12')
-                    ->where(Laporanakhir::raw('LEFT(KODE_BARANG_SAGE,2)'), '<>', '11')
-                    ->update([
-
-                        'SAwalUnit' => Laporanakhir::raw('(SAkhirUnit -(Pengiriman_Price + Bom_Price)) - SAkhirUnit'),
-                        'SAwalPrice' => Laporanakhir::raw('(SAkhirPrice - ((SAkhirQuantity * IFNULL( Pengiriman_Price, 0 )) +( SAkhirQuantity * IFNULL( Bom_Price, 0 )))) - SAkhirPrice')
-                    ]);
-            }
-
-            $LaporanSaldoAwalupdate = Laporanakhir::get();
-
-            foreach ($LaporanSaldoAwalupdate as $LaporanSaldoAwals) {
-                Laporanakhir::where('KODE', $LaporanSaldoAwals->KODE)->where('KODE_BARANG_SAGE', $LaporanSaldoAwals->KODE_BARANG_SAGE)
-                    ->update([
-                        'Pembelian_Unit' => 0,
-                        'Pembelian_Quantity' => 0,
-                        'Pembelian_Price' => 0,
-
-                        'Penerimaan_Unit' => 0,
-                        'Penerimaan_Quantity' => 0,
-                        'Penerimaan_Price' => 0,
-
-                        'TransferIn_Unit' => $LaporanSaldoAwals->SAwalUnit,
-                        'TransferIn_Price' => $LaporanSaldoAwals->SAwalPrice,
-                        'TransferIn_Quantity' => $LaporanSaldoAwals->SAwalQuantity,
-
-                        'Pengiriman_Price' => 0,
-                        'Bom_Price' => 0,
-
-                        'TransferOut_Quantity' => 0,
-                        'TransferOut_Price' => 0,
-
-                        'SAkhirUnit' => $LaporanSaldoAwals->SAwalUnit,
-                        'SAkhirQuantity' => $LaporanSaldoAwals->SAwalQuantity,
-                        'SAkhirPrice' => $LaporanSaldoAwals->SAwalPrice
-                    ]);
-            }
-
-
-
-            $LaporanSaldoAkhir = Laporan::select(
-                'KODE',
-                'NAMA',
-                'KODE_BARANG_SAGE',
-                'KODE_DESKRIPSI_BARANG_SAGE',
-                'STOKING_UNIT_BOM',
-
-                Laporan::raw('sum(Pembelian_Unit)as Pemunit'),
-                Laporan::raw('sum(Pembelian_Price)as Pemprice'),
-
-                Laporan::raw('sum(Penerimaan_Unit)as Peneunit'),
-                Laporan::raw('sum(Penerimaan_Price)as Peneprice'),
-
-                Laporan::raw('sum(Pengiriman_Unit)as pengiunit'),
-
-                Laporan::raw('sum(Bom_Unit)as Bomunit'),
-
-            )->groupBy('KODE', 'KODE_BARANG_SAGE')->whereDate('TANGGAL', '>=', $Tanggal_awal)->whereDate('TANGGAL', '<=', $Tanggal_akhir)->get();
-
-            foreach ($LaporanSaldoAkhir as $LaporanSaldoAkhirs) {
-
-                $temp = Laporanakhir::where('KODE', $LaporanSaldoAkhirs->KODE)->where('KODE_BARANG_SAGE', $LaporanSaldoAkhirs->KODE_BARANG_SAGE)
-                    ->update([
-
-                        'Pembelian_Unit' => $LaporanSaldoAkhirs->Pemunit,
-                        'Pembelian_Price' => $LaporanSaldoAkhirs->Pemprice,
-                        'Pembelian_Quantity' => Laporanakhir::raw(' IFNULL(Pembelian_Price / NULLIF( Pembelian_Unit, 0 ), 0)'),
-
-                        'Penerimaan_Unit' => $LaporanSaldoAkhirs->Peneunit,
-                        'Penerimaan_Price' => $LaporanSaldoAkhirs->Peneprice,
-                        'Penerimaan_Quantity' => Laporanakhir::raw(' IFNULL(Penerimaan_Price / NULLIF( Penerimaan_Unit, 0 ), 0)'),
-
-
-                        'TransferIn_Unit' => Laporanakhir::raw('IFNULL(SAwalUnit, 0)+ IFNULL(Pembelian_Unit, 0) +IFNULL(Penerimaan_Unit, 0)'),
-                        'TransferIn_Price' => Laporanakhir::raw('IFNULL(SAwalPrice, 0)+ IFNULL(Pembelian_Price, 0) +IFNULL(Penerimaan_Price, 0)'),
-                        'TransferIn_Quantity' => Laporanakhir::raw(' IFNULL(TransferIn_Price / NULLIF( TransferIn_Unit, 0 ), 0)'),
-
-
-                        'Pengiriman_Unit' => $LaporanSaldoAkhirs->pengiunit,
-                        'Pengiriman_Quantity' => Laporanakhir::raw('IF(Pengiriman_Unit IS NULL, 0, TransferIn_Quantity)'),
-                        'Pengiriman_Price' => Laporanakhir::raw('IFNULL(TransferIn_Quantity, 0) * IFNULL(Pengiriman_Unit, 0)'),
-
-
-                        'Bom_Unit' => $LaporanSaldoAkhirs->Bomunit,
-                        'Bom_Quantity' => Laporanakhir::raw('IF(Bom_Unit IS NULL, 0, TransferIn_Quantity)'),
-                        'Bom_Price' => Laporanakhir::raw('IFNULL(TransferIn_Quantity, 0) * IFNULL(Bom_Unit, 0)'),
-
-
-                        'TransferOut_Unit' => $LaporanSaldoAkhirs->pengiunit + $LaporanSaldoAkhirs->Bomunit,
-                        'TransferOut_Quantity' => Laporanakhir::raw('IF(TransferOut_Unit IS NULL, 0, TransferIn_Quantity) '),
-                        'TransferOut_Price' => Laporanakhir::raw('IFNULL(TransferIn_Quantity, 0) *IFNULL(TransferOut_Unit, 0)'),
-
-                        'SAkhirUnit' => Laporanakhir::raw('IFNULL(TransferIn_Unit, 0) - IFNULL(TransferOut_Unit, 0)  '),
-                        'SAkhirQuantity' => Laporanakhir::raw('TransferIn_Quantity'),
-                        'SAkhirPrice' => Laporanakhir::raw('TransferIn_Quantity * SAkhirUnit')
-
-                    ]);
-                if ($temp) {
-                    continue;
-                } else {
-                    Laporanakhir::create([
-                        'KODE' => $LaporanSaldoAkhirs->KODE,
-                        'NAMA' => $LaporanSaldoAkhirs->NAMA,
-                        'KODE_BARANG_SAGE' => $LaporanSaldoAkhirs->KODE_BARANG_SAGE,
-                        'KODE_DESKRIPSI_BARANG_SAGE' => $LaporanSaldoAkhirs->KODE_DESKRIPSI_BARANG_SAGE,
-                        'STOKING_UNIT_BOM' => $LaporanSaldoAkhirs->STOKING_UNIT_BOM,
-
-                        'Pembelian_Unit' => $LaporanSaldoAkhirs->Pemunit,
-                        'Pembelian_Price' => $LaporanSaldoAkhirs->Pemprice,
-                        'Pembelian_Quantity' => Laporanakhir::raw(' IFNULL(Pembelian_Price / NULLIF( Pembelian_Unit, 0 ), 0)'),
-
-                        'Penerimaan_Unit' => $LaporanSaldoAkhirs->Peneunit,
-                        'Penerimaan_Price' => $LaporanSaldoAkhirs->Peneprice,
-                        'Penerimaan_Quantity' => Laporanakhir::raw(' IFNULL(Penerimaan_Price / NULLIF( Penerimaan_Unit, 0 ), 0)'),
-
-                        'TransferIn_Unit' => Laporanakhir::raw('IFNULL(SAwalUnit, 0)+ IFNULL(Pembelian_Unit, 0) +IFNULL(Penerimaan_Unit, 0)'),
-                        'TransferIn_Price' => Laporanakhir::raw('IFNULL(SAwalPrice, 0)+ IFNULL(Pembelian_Price, 0) +IFNULL(Penerimaan_Price, 0)'),
-                        'TransferIn_Quantity' => Laporanakhir::raw(' IFNULL(TransferIn_Price / NULLIF( TransferIn_Unit, 0 ), 0)'),
-
-                        'Pengiriman_Unit' => $LaporanSaldoAkhirs->pengiunit,
-                        'Pengiriman_Quantity' => Laporanakhir::raw(' IF(Pengiriman_Unit IS NULL, 0, TransferIn_Quantity)'),
-                        'Pengiriman_Price' => Laporanakhir::raw('IFNULL(TransferIn_Quantity, 0) * IFNULL(Pengiriman_Unit, 0)'),
-
-                        'Bom_Unit' => $LaporanSaldoAkhirs->Bomunit,
-                        'Bom_Quantity' => Laporanakhir::raw('IF(Bom_Unit IS NULL, 0, TransferIn_Quantity)'),
-                        'Bom_Price' => Laporanakhir::raw('IFNULL(TransferIn_Quantity, 0) * IFNULL(Bom_Unit, 0)'),
-
-
-                        'TransferOut_Unit' => $LaporanSaldoAkhirs->pengiunit + $LaporanSaldoAkhirs->Bomunit,
-                        'TransferOut_Quantity' => Laporanakhir::raw(' IF(TransferOut_Unit IS NULL, 0, TransferIn_Quantity)'),
-                        'TransferOut_Price' => Laporanakhir::raw('IFNULL(TransferIn_Quantity, 0) *IFNULL(TransferOut_Unit, 0)'),
-
-
-                        'SAkhirUnit' => Laporanakhir::raw('IFNULL(TransferIn_Unit, 0) - IFNULL(TransferOut_Unit, 0)  '),
-                        'SAkhirQuantity' => Laporanakhir::raw(' IFNULL(TransferIn_Price / NULLIF( TransferIn_Unit, 0 ), 0)'),
-                        'SAkhirPrice' => Laporanakhir::raw('TransferIn_Quantity * SAkhirUnit')
-
-
-
-                    ]);
-                }
-            }
-
-
-
-            $UpdateBiayaLaporan = Laporanakhir::get();
-
-            foreach ($UpdateBiayaLaporan as $LaporanSaldoAwals) {
-                Laporanakhir::where('KODE', '<>', 7301)->where('KODE', '<>', 7302)
-                    ->where('KODE', '<', 9000)
-                    ->where(Laporanakhir::raw('LEFT(KODE_BARANG_SAGE,2)'), '<>', '12')
-                    ->where(Laporanakhir::raw('LEFT(KODE_BARANG_SAGE,2)'), '<>', '11')
-                    ->update([
-
-                        'BiayaUnit' => Laporanakhir::raw('IFNULL(TransferIn_Unit, 0)'),
-                        'BiayaQuantity' => Laporanakhir::raw('IFNULL(TransferIn_Quantity, 0)'),
-                        'BiayaPrice' => Laporanakhir::raw('IFNULL(TransferIn_Price, 0)'),
-
-                        'SAkhirUnit' => Laporanakhir::raw('(TransferIn_Unit - TransferOut_Unit) - TransferIn_Unit '),
-                        'SAkhirQuantity' => Laporanakhir::raw('TransferIn_Quantity '),
-                        'SAkhirPrice' => Laporanakhir::raw('SAkhirUnit*TransferIn_Quantity')
-                    ]);
-            }
-
-            $laporanakhirview = Laporanakhir::get();
-            return view('Laporansduas', compact('laporanakhirview'));
-        }
-
-        return redirect("/")->withSuccess('Opps! You do not have access');
-    }
-
-
-
-    public function Laporanhppstanggal(Request $request)
-    {
-        if (Auth::check()) {
-            // menangkap data pencarian
-            $Tanggal = $request->date;
-            /*
-
-                $dprrckbomhargabarang = Dprrckbom::select(
-                    'dprrckboms.KODE_BARANG',
-                    Dprrckbom::raw('sum(dprrckboms.Harga) as Harga1')
-                )->groupBy('dprrckboms.KODE_BARANG')->get();
-
-                foreach ($dprrckbomhargabarang as $dprrckbomhargabarangs) {
-                    Dprrckbom::where('KODE_BARANG', $dprrckbomhargabarangs->KODE_BARANG)
-                        ->update(['dprrckboms.HargaBarang' => $dprrckbomhargabarangs->Harga1]);
-                }
-
-                $dprbomhargabarang = Dprbom::select(
-                    'dprboms.KODE_BARANG',
-                    Dprbom::raw('sum(dprboms.Harga) as Harga1')
-                )->groupBy('dprboms.KODE_BARANG')->get();
-
-                foreach ($dprbomhargabarang as $dprbomhargabarangs) {
-                    Dprbom::where('KODE_BARANG', $dprbomhargabarangs->KODE_BARANG)
-                        ->update(['dprboms.HargaBarang' => $dprbomhargabarangs->Harga1]);
-                }
-
-
-                $items1123 = Item::select('dprrckboms.NAMA_BARANG', 'dprrckboms.HargaBarang')->join(
-                    'dprrckboms',
-                    'items.KODE_DESKRIPSI_BARANG_SAGE',
-                    '=',
-                    'dprrckboms.NAMA_BARANG'
-                )->get();
-
-                foreach ($items1123 as $itemss1123) {
-                    Item::where('KODE_DESKRIPSI_BARANG_SAGE', $itemss1123->NAMA_BARANG)->update(['items.Harga' => $itemss1123->HargaBarang]);
-                }
-
-                $items11234 = Item::select('dprboms.NAMA_BARANG', 'dprboms.HargaBarang')->join(
-                    'dprboms',
-                    'items.KODE_DESKRIPSI_BARANG_SAGE',
-                    '=',
-                    'dprboms.NAMA_BARANG'
-                )->get();
-
-                foreach ($items11234 as $itemss11234) {
-                    Item::where('KODE_DESKRIPSI_BARANG_SAGE', $itemss11234->NAMA_BARANG)->update(['items.Harga' => $itemss11234->HargaBarang]);
-                }
-
-                $bom2 = Bom::select('boms.NAMA_BAHAN', 'items.Harga')->join(
-                    'items',
-                    'items.KODE_DESKRIPSI_BARANG_SAGE',
-                    '=',
-                    'boms.NAMA_BAHAN'
-                )->groupBy('boms.NAMA_BAHAN')->get();
-                foreach ($bom2 as $bom2s) {
-                    Bom::where('NAMA_BAHAN', $bom2s->NAMA_BAHAN)
-                        ->update(['boms.Harga' => $bom2s->Harga]);
-                }
-
-                $bom3 = Bom::select(
-                    'boms.KODE_BARANG',
-                    Bom::raw('sum(boms.Harga) as Harga2')
-                )->groupBy('boms.KODE_BARANG')->get();
-
-                foreach ($bom3 as $bom3s) {
-                    Bom::where('KODE_BARANG', $bom3s->KODE_BARANG)
-                        ->update(['boms.HargaBarang' => $bom3s->Harga2]);
-                }
-
-                */
-
-            $Boms23 =  Penjualan::select(
-                'penjualans.TANGGAL',
-                'penjualans.KODE_OUTLET',
-                'penjualans.Outlet',
-                'penjualans.KODE_BARANG',
-                'penjualans.Barang',
-                'penjualans.Banyak',
-                'penjualans.Jumlah'
-            )->whereDate('TANGGAL', '=', $Tanggal)->get();
-
-            foreach ($Boms23 as $Boms23s) {
-                if ($Boms23s->Banyak != 0) {
-                    Laporanhpp::create([
-                        'TANGGAL' => $Boms23s->TANGGAL,
-                        'KODE_OUTLET' => $Boms23s->KODE_OUTLET,
-                        'Outlet' => $Boms23s->Outlet,
-                        'KODE_BARANG' => $Boms23s->KODE_BARANG,
-                        'Barang' => $Boms23s->Barang,
-                        'Banyak' => $Boms23s->Banyak,
-                        'Jumlah' => $Boms23s->Jumlah,
-                        'Revenue' => $Boms23s->Jumlah / 1.1
-                    ]);
-                }
-            }
-
-            /*memasukan nilai harga pada bahan baku bom dapur racik dari pembelian */
-            $Boms1 = Laporanhpp::join('boms', function ($join) {
-                $join->on(
-                    Laporanhpp::raw('RIGHT(boms.KODE_BARANG,13)'),
-                    '=',
-                    'laporanhpps.KODE_BARANG'
-                )->on(
-                    Laporanhpp::raw('LEFT(boms.KODE_BARANG,4)'),
-                    '=',
-                    'laporanhpps.KODE_OUTLET'
-                );
-            })->select(
-                'laporanhpps.TANGGAL',
-                'laporanhpps.KODE_OUTLET',
-                'laporanhpps.Outlet',
-                'boms.NAMA_BAHAN',
-                'boms.NAMA_BARANG',
-                'boms.SATUAN_BAHAN',
-                Laporanhpp::raw('laporanhpps.Banyak *boms.BANYAK as quantit2y ')
-            )->get();
-
-            foreach ($Boms1 as $Boms11) {
-                $temp = Convertbom::where('KODE_BARANG_SAGE', $Boms11->NAMA_BAHAN)
-                    ->where('KODE_DESKRIPSI_BARANG_SAGE', $Boms11->NAMA_BARANG)
-                    ->update([
-                        'JUMLAH' => 0 + 0
-                    ]);
-                if ($temp) {
-                    continue;
-                } else {
-                    Convertbom::create([
-                        'TANGGAL' => $Boms11->TANGGAL,
-                        'KODE' => $Boms11->KODE_OUTLET,
-                        'NAMA' => $Boms11->Outlet,
-                        'KODE_BARANG_SAGE' => $Boms11->NAMA_BAHAN,
-                        'KODE_DESKRIPSI_BARANG_SAGE' => $Boms11->NAMA_BARANG,
-                        'STOKING_UNIT_BOM' => $Boms11->SATUAN_BAHAN,
-                        'QUANTITY' => $Boms11->quantit2y,
-                        'HARGA' => 0,
-                        'JUMLAH' => 0
-                    ]);
-                }
-            }
-
-            $bom1234 = Convertbom::join('items', 'items.KODE_DESKRIPSI_BARANG_SAGE', '=', 'convertboms.KODE_BARANG_SAGE')
-                ->select(
-                    'convertboms.KODE_BARANG_SAGE',
-                    Convertbom::raw('convertboms.QUANTITY * items.Harga as harga22 ')
-                )->get();
-            foreach ($bom1234 as $bom1234s) {
-                Convertbom::where('KODE_BARANG_SAGE', $bom1234s->KODE_BARANG_SAGE)
-                    ->update(['HARGA' => $bom1234s->harga22]);
-            }
-
-            $bom1234sum = Convertbom::select(
-                'convertboms.KODE_DESKRIPSI_BARANG_SAGE',
-                Convertbom::raw('sum(convertboms.HARGA) as Harga21')
-            )->groupBy(
-                'convertboms.KODE_DESKRIPSI_BARANG_SAGE'
-            )->get();
-
-            foreach ($bom1234sum as $bom1234sums) {
-                Convertbom::where('KODE_DESKRIPSI_BARANG_SAGE', $bom1234sums->KODE_DESKRIPSI_BARANG_SAGE)
-                    ->update(['JUMLAH' => $bom1234sums->Harga21]);
-            }
-
-            $Bomslaporanhpp = Laporanhpp::join('convertboms', 'convertboms.KODE_DESKRIPSI_BARANG_SAGE', '=', 'laporanhpps.Barang')
-                ->select(
-                    'laporanhpps.Barang',
-                    'laporanhpps.Banyak',
-                    'laporanhpps.Jumlah',
-                    'convertboms.JUMLAH as jumlah21'
-                )->get();
-
-            foreach ($Bomslaporanhpp as $Bomslaporanhpps) {
-                Laporanhpp::where('Barang', $Bomslaporanhpps->Barang)->update([
-                    'COGS' => $Bomslaporanhpps->jumlah21,
-                    'Profit' => ($Bomslaporanhpps->Jumlah  / 1.1) - $Bomslaporanhpps->jumlah21,
-                    'Margin' => ((($Bomslaporanhpps->Jumlah / 1.1) - $Bomslaporanhpps->jumlah21) / ($Bomslaporanhpps->Jumlah  / 1.1)) * 100
-                ]);
-            }
-
-
-            $penjualanss = Laporanhpp::whereDate('TANGGAL', '=', $Tanggal)->get();
-            return view('Laporanhpps', compact('penjualanss'));
-        }
-
-        return redirect("/")->withSuccess('Opps! You do not have access');
-    }
-
-    public function carilaporan(Request $request)
-    {
-        if (Auth::check()) {
-            $cari = $request->cari;
-            $laporanakhirview = Laporanakhir::where('KODE', $cari)->get();
-            return view('Laporans', compact('laporanakhirview'));
-        }
-
-        return redirect("/")->withSuccess('Opps! You do not have access');
-    }
-
-    /*
-    //penerimaan dari
-
-        $penerimaan = Convertpenerimaan::select(
-            'convertpenerimaans.TANGGAL',
-            'convertpenerimaans.DARI',
-            'convertpenerimaans.NAMADARI',
-            'convertpenerimaans.KODE_BARANG_SAGE',
-            'convertpenerimaans.KODE_DESKRIPSI_BARANG_SAGE',
-            'convertpenerimaans.STOKING_UNIT_BOM',
-            Convertpenerimaan::raw('sum(convertpenerimaans.QUANTITY) as unit'),
-            'convertpenerimaans.HARGA',
-            'convertpenerimaans.JUMLAH',
-        )->groupBy('convertpenerimaans.TANGGAL', 'convertpenerimaans.DARI', 'convertpenerimaans.KODE_BARANG_SAGE')->get();
-
-        foreach ($penerimaan as $Boms11) {
-            $temp = Laporan::Where('TANGGAL', $Boms11->TANGGAL)->where('KODE', $Boms11->DARI)->where('KODE_BARANG_SAGE', $Boms11->KODE_BARANG_SAGE)
-                ->update([
-                    'Penerimaan_Unit' => $Boms11->unit, 'Penerimaan_Quantity' => $Boms11->HARGA,
-                    'Penerimaan_Price' => $Boms11->JUMLAH, 'Pengiriman_Unit' => $Boms11->unit
-                ]);
-            if ($temp) {
-                continue;
-            } else {
-                Laporan::where('TANGGAL', '!=', $Boms11->TANGGAL)->where('KODE', '!=', $Boms11->DARI)->where('KODE_BARANG_SAGE', '!=', $Boms11->KODE_BARANG_SAGE)
-                    ->create([
-                        'TANGGAL' => $Boms11->TANGGAL,
-                        'KODE' => $Boms11->DARI,
-                        'NAMA' => $Boms11->NAMADARI,
-                        'KODE_BARANG_SAGE' => $Boms11->KODE_BARANG_SAGE,
-                        'KODE_DESKRIPSI_BARANG_SAGE' => $Boms11->KODE_DESKRIPSI_BARANG_SAGE,
-                        'STOKING_UNIT_BOM' => $Boms11->STOKING_UNIT_BOM,
-                        'Penerimaan_Unit' => $Boms11->unit,
-                        'Penerimaan_Quantity' => $Boms11->HARGA,
-                        'Penerimaan_Price' => $Boms11->JUMLAH,
-                        'Pengiriman_Unit' => $Boms11->unit
-                    ]);
-            }
-        }
-        // penerimaan penerima
-        $penerimaan2 = Convertpenerimaan::select(
-            'convertpenerimaans.TANGGAL',
-            'convertpenerimaans.PENERIMA',
-            'convertpenerimaans.NAMAPENERIMA',
-            'convertpenerimaans.KODE_BARANG_SAGE',
-            'convertpenerimaans.KODE_DESKRIPSI_BARANG_SAGE',
-            'convertpenerimaans.STOKING_UNIT_BOM',
-            Convertpenerimaan::raw('sum(convertpenerimaans.QUANTITY) as unit'),
-            'convertpenerimaans.HARGA',
-            'convertpenerimaans.JUMLAH',
-        )->groupBy('convertpenerimaans.TANGGAL', 'convertpenerimaans.PENERIMA', 'convertpenerimaans.KODE_BARANG_SAGE')->get();
-
-        foreach ($penerimaan2 as $Boms112) {
-            $temp = Laporan::where('TANGGAL', $Boms112->TANGGAL)->where('KODE', $Boms112->PENERIMA)->where('KODE_BARANG_SAGE', $Boms112->KODE_BARANG_SAGE)
-                ->update([
-                    'Penerimaan_Unit' => $Boms112->unit, 'Penerimaan_Quantity' => $Boms112->HARGA,
-                    'Penerimaan_Price' => $Boms112->JUMLAH
-                ]);
-            if ($temp) {
-                continue;
-            } else {
-                Laporan::create([
-                    'TANGGAL' => $Boms112->TANGGAL,
-                    'KODE' => $Boms112->PENERIMA,
-                    'NAMA' => $Boms112->NAMAPENERIMA,
-                    'KODE_BARANG_SAGE' => $Boms112->KODE_BARANG_SAGE,
-                    'KODE_DESKRIPSI_BARANG_SAGE' => $Boms112->KODE_DESKRIPSI_BARANG_SAGE,
-                    'STOKING_UNIT_BOM' => $Boms112->STOKING_UNIT_BOM,
-                    'Penerimaan_Unit' => $Boms112->unit,
-                    'Penerimaan_Quantity' => $Boms112->HARGA,
-                    'Penerimaan_Price' => $Boms112->JUMLAH,
-                ]);
-            }
-        }
-
-
-        //pembelian
-        $pembelian = Convertpembelian::get();
-
-        foreach ($pembelian as $pembelians) {
-            $temp = Laporan::where('TANGGAL', $pembelians->TANGGAL)->where('KODE', $pembelians->KODE)->where('KODE_BARANG_SAGE', $pembelians->KODE_BARANG_SAGE)
-                ->update([
-                    'Pembelian_Unit' => $pembelians->QUANTITY, 'Pembelian_Quantity' => $pembelians->HARGA,
-                    'Pembelian_Price' => $pembelians->JUMLAH
-                ]);
-            if ($temp) {
-                continue;
-            } else {
-                Laporan::where('TANGGAL', '!=', $pembelians->TANGGAL)->Where('KODE', '!=', $pembelians->KODE)->Where('KODE_BARANG_SAGE', '!=', $pembelians->KODE_BARANG_SAGE)->create([
-                    'TANGGAL' => $pembelians->TANGGAL,
-                    'KODE' => $pembelians->KODE,
-                    'NAMA' => $pembelians->NAMA,
-                    'KODE_BARANG_SAGE' => $pembelians->KODE_BARANG_SAGE,
-                    'KODE_DESKRIPSI_BARANG_SAGE' => $pembelians->KODE_DESKRIPSI_BARANG_SAGE,
-                    'STOKING_UNIT_BOM' => $pembelians->STOKING_UNIT_BOM,
-                    'Pembelian_Unit' => $pembelians->QUANTITY,
-                    'Pembelian_Quantity' => $pembelians->HARGA,
-                    'Pembelian_Price' => $pembelians->JUMLAH,
-                ]);
-            }
-        }
-
-        //bom
-        $bomconvert = Convertbom::select(
-            'convertboms.TANGGAL',
-            'convertboms.KODE',
-            'convertboms.NAMA',
-            'convertboms.KODE_BARANG_SAGE',
-            'convertboms.KODE_DESKRIPSI_BARANG_SAGE',
-            'convertboms.STOKING_UNIT_BOM',
-            Convertpenerimaan::raw('sum(convertboms.QUANTITY) as unit'),
-        )->groupBy('convertboms.TANGGAL', 'convertboms.KODE', 'convertboms.KODE_BARANG_SAGE')->get();
-
-        foreach ($bomconvert as $Bomsconvert1132) {
-            $temp = Laporan::where('TANGGAL', $Bomsconvert1132->TANGGAL)->where('KODE', $Bomsconvert1132->KODE)->where('KODE_BARANG_SAGE', $Bomsconvert1132->KODE_BARANG_SAGE)
-                ->update([
-                    'Bom_Unit' => $Bomsconvert1132->unit
-                ]);
-            if ($temp) {
-                continue;
-            } else {
-                Laporan::create([
-                    'TANGGAL' => $Bomsconvert1132->TANGGAL,
-                    'KODE' => $Bomsconvert1132->KODE,
-                    'NAMA' => $Bomsconvert1132->NAMA,
-                    'KODE_BARANG_SAGE' => $Bomsconvert1132->KODE_BARANG_SAGE,
-                    'KODE_DESKRIPSI_BARANG_SAGE' => $Bomsconvert1132->KODE_DESKRIPSI_BARANG_SAGE,
-                    'STOKING_UNIT_BOM' => $Bomsconvert1132->STOKING_UNIT_BOM,
-                    'Bom_Unit' => $Bomsconvert1132->unit,
-                ]);
-            }
-        }
-
-        $saldoawallaporan = Laporan::get();
-        foreach ($saldoawallaporan as $saldoawallaporans) {
-            Saldoawal::create([
-                'KODE' => $saldoawallaporans->KODE,
-                'NAMA' => $saldoawallaporans->NAMA,
-                'KODE_BARANG_SAGE' => $saldoawallaporans->KODE_BARANG_SAGE,
-                'KODE_DESKRIPSI_BARANG_SAGE' => $saldoawallaporans->KODE_DESKRIPSI_BARANG_SAGE,
-                'STOKING_UNIT_BOM' => $saldoawallaporans->STOKING_UNIT_BOM,
-                'SAwalUnit' => 0,
-                'SAwalQuantity' => 0,
-                'SAwalPrice' => 0
-            ]);
-        }
-
-        //Transin Trans OUT SALDO AKHIR
-        $laporansdatates = Laporan::orderBy('TANGGAL', 'ASC')->get();
-        foreach ($laporansdatates as $Laporandata1s) {
-            Laporan::Where('laporans.TANGGAL', $Laporandata1s->TANGGAL)->where('laporans.KODE', $Laporandata1s->KODE)->where('laporans.KODE_BARANG_SAGE', $Laporandata1s->KODE_BARANG_SAGE)
-                ->join('saldoawals', function ($join) {
-                    $join->on(
-                        'saldoawals.KODE',
-                        '=',
-                        'laporans.KODE'
-                    )->on(
-                        'saldoawals.KODE_BARANG_SAGE',
-                        '=',
-                        'laporans.KODE_BARANG_SAGE'
-                    );
-                })->update([
-
-                    // saldo awal bikin tabel baru yang isi nya kode, kode sage dll gapake tanggal, isinya di update terus sesuai saldo akhir
-                    // pake join sebelum update nya pake tabel yang baru
-
-                    'laporans.SAwalUnit' => Laporan::raw('saldoawals.SAwalUnit'),
-                    'laporans.SAwalQuantity' => Laporan::raw('saldoawals.SAwalQuantity'),
-                    'laporans.SAwalPrice' => Laporan::raw('saldoawals.SAwalPrice'),
-
-                    'laporans.TransferIn_Unit' => $Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit,
-                    'laporans.TransferIn_Price' => $Laporandata1s->SAwalPrice + $Laporandata1s->Pembelian_Price + $Laporandata1s->Penerimaan_Price,
-                    'laporans.TransferIn_Quantity' => ($Laporandata1s->SAwalPrice + $Laporandata1s->Pembelian_Price + $Laporandata1s->Penerimaan_Price) / ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit),
-
-                    'laporans.Pengiriman_Quantity' => ($Laporandata1s->SAwalPrice + $Laporandata1s->Pembelian_Price + $Laporandata1s->Penerimaan_Price) / ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit),
-                    'laporans.Pengiriman_Price' => (($Laporandata1s->SAwalPrice + $Laporandata1s->Pembelian_Price + $Laporandata1s->Penerimaan_Price) / ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit)) *  $Laporandata1s->Pengiriman_Unit,
-
-                    'laporans.Bom_Quantity' => ($Laporandata1s->SAwalPrice + $Laporandata1s->Pembelian_Price + $Laporandata1s->Penerimaan_Price) / ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit),
-                    'laporans.Bom_Price' => (($Laporandata1s->SAwalPrice + $Laporandata1s->Pembelian_Price + $Laporandata1s->Penerimaan_Price) / ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit)) *  $Laporandata1s->Bom_Unit,
-
-                    'laporans.TransferOut_Unit' => $Laporandata1s->Pengiriman_Unit + $Laporandata1s->Bom_Unit,
-                    'laporans.TransferOut_Quantity' => ($Laporandata1s->SAwalPrice + $Laporandata1s->Pembelian_Price + $Laporandata1s->Penerimaan_Price) / ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit),
-                    'laporans.TransferOut_Price' => (($Laporandata1s->SAwalPrice + $Laporandata1s->Pembelian_Price + $Laporandata1s->Penerimaan_Price) / ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit)) * ($Laporandata1s->Pengiriman_Unit + $Laporandata1s->Bom_Unit),
-
-                    'laporans.SAkhirUnit' => ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit) - ($Laporandata1s->Pengiriman_Unit + $Laporandata1s->Bom_Unit),
-                    'laporans.SAkhirQuantity' => ($Laporandata1s->SAwalPrice + $Laporandata1s->Pembelian_Price + $Laporandata1s->Penerimaan_Price) / ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit),
-                    'laporans.SAkhirPrice' => (($Laporandata1s->SAwalPrice + $Laporandata1s->Pembelian_Price + $Laporandata1s->Penerimaan_Price) / ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit)) * (($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit) - ($Laporandata1s->Pengiriman_Unit + $Laporandata1s->Bom_Unit)),
-
-                    'saldoawals.SAwalUnit' => ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit) - ($Laporandata1s->Pengiriman_Unit + $Laporandata1s->Bom_Unit),
-                    'saldoawals.SAwalQuantity' => ($Laporandata1s->SAwalPrice + $Laporandata1s->Pembelian_Price + $Laporandata1s->Penerimaan_Price) / ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit),
-                    'saldoawals.SAwalPrice' => (($Laporandata1s->SAwalPrice + $Laporandata1s->Pembelian_Price + $Laporandata1s->Penerimaan_Price) / ($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit)) * (($Laporandata1s->SAwalUnit + $Laporandata1s->Pembelian_Unit + $Laporandata1s->Penerimaan_Unit) - ($Laporandata1s->Pengiriman_Unit + $Laporandata1s->Bom_Unit)),
-
-                ]);
         }
     */
 }

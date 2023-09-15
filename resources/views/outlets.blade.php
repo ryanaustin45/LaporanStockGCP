@@ -3,6 +3,7 @@
 
 <head>
     @include('Template.Head')
+    <title> Outlets </title>
 </head>
 
 <body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">

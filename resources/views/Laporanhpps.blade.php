@@ -3,6 +3,8 @@
 
 <head>
     @include('Template.Head')
+    <title> Laporan HPP </title>
+
 </head>
 
 
@@ -25,6 +27,11 @@
                                         Tanggal :
                                     </label>
                                     <input type="date" name="date" class="form-control">
+                                </div>
+                                <div class="col-md-3 pt-4 p-4"><label>
+                                        Outlet :
+                                    </label>
+                                    <input type="text" name="cari" placeholder="Masukan kode Outlet .." value="{{ old('cari') }}">
                                 </div>
                             </div>
                         </div>

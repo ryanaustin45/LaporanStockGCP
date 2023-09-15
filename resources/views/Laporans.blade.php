@@ -3,6 +3,7 @@
 
 <head>
     @include('Template.Head')
+    <title> Laporan Stock </title>
 
 </head>
 
@@ -41,49 +42,25 @@
                     <table id="example1" class="table table-bordered table-responsive ">
                         <thead>
                             <tr>
-                                <th colspan="3"> </th>
-                                <th colspan="3"> Saldo Awal </th>
-                                <th colspan="3"> Pembelian </th>
-                                <th colspan="3"> Penerimaan Internal</th>
-                                <th colspan="3"> Total Transfer IN</th>
-                                <th colspan="3"> Pengiriman Internal</th>
-                                <th colspan="3"> Bom </th>
-                                <th colspan="3"> Total Transfer Out</th>
-                                <th colspan="3"> Biaya</th>
-                                <th colspan="3"> Saldo Akhir</th>
+                                <th> Kode Outlet </th>
+                                <th> Nama Item</th>
+                                <th> Kode Item</th>
+                                <th> Satuan</th>
+                                <th> Harga</th>
 
-                            </tr>
-                            <tr>
-                                <th>Kode Outlet</th>
-                                <th>Nama Item</th>
-                                <th>Satuan</th>
-                                <th>Quantity</th>
-                                <th>Price</th>
-                                <th>Amount</th>
-                                <th>Quantity</th>
-                                <th>Price</th>
-                                <th>Amount</th>
-                                <th>Quantity</th>
-                                <th>Price</th>
-                                <th>Amount</th>
-                                <th>Quantity</th>
-                                <th>Price</th>
-                                <th>Amount</th>
-                                <th>Quantity</th>
-                                <th>Price</th>
-                                <th>Amount</th>
-                                <th>Quantity</th>
-                                <th>Price</th>
-                                <th>Amount</th>
-                                <th>Quantity</th>
-                                <th>Price</th>
-                                <th>Amount</th>
-                                <th>Quantity</th>
-                                <th>Price</th>
-                                <th>Amount</th>
-                                <th>Quantity</th>
-                                <th>Price</th>
-                                <th>Amount</th>
+                                <th> Saldo Awal Quantity </th>
+                                <th> Saldo Awal Nilai </th>
+
+                                <th> Pembelian </th>
+                                <th> Penerimaan Internal</th>
+                                <th> Total Transfer IN</th>
+                                <th> Pengiriman Internal</th>
+                                <th> Bom </th>
+                                <th> Total Transfer Out</th>
+                                <th> Biaya</th>
+                                <th> Saldo Akhir Quantity</th>
+                                <th> Saldo Akhir Nilai </th>
+
                             </tr>
                         </thead>
                         <tbody>
@@ -92,33 +69,20 @@
                             <tr>
                                 <td>{{ $Item->KODE }}</td>
                                 <td>{{ $Item->KODE_DESKRIPSI_BARANG_SAGE }}</td>
+                                <td>{{ $Item->KODE_BARANG_SAGE }}</td>
+
                                 <td>{{ $Item->STOKING_UNIT_BOM }}</td>
-                                <td>{{ $Item->SAwalUnit }}</td>
                                 <td>{{ $Item->SAwalQuantity }}</td>
+                                <td>{{ $Item->SAwalUnit }}</td>
                                 <td>{{ $Item->SAwalPrice }}</td>
                                 <td>{{ $Item->Pembelian_Unit }}</td>
-                                <td>{{ $Item->Pembelian_Quantity }}</td>
-                                <td>{{ $Item->Pembelian_Price }}</td>
                                 <td>{{ $Item->Penerimaan_Unit }}</td>
-                                <td>{{ $Item->Penerimaan_Quantity }}</td>
-                                <td>{{ $Item->Penerimaan_Price }}</td>
                                 <td>{{ $Item->TransferIn_Unit }}</td>
-                                <td>{{ $Item->TransferIn_Quantity }}</td>
-                                <td>{{ $Item->TransferIn_Price }}</td>
                                 <td>{{ $Item->Pengiriman_Unit }}</td>
-                                <td>{{ $Item->Pengiriman_Quantity }}</td>
-                                <td>{{ $Item->Pengiriman_Price }}</td>
                                 <td>{{ $Item->Bom_Unit }}</td>
-                                <td>{{ $Item->Bom_Quantity }}</td>
-                                <td>{{ $Item->Bom_Price }}</td>
                                 <td>{{ $Item->TransferOut_Unit }}</td>
-                                <td>{{ $Item->TransferOut_Quantity }}</td>
-                                <td>{{ $Item->TransferOut_Price }}</td>
                                 <td>{{ $Item->BiayaUnit }}</td>
-                                <td>{{ $Item->BiayaQuantity }}</td>
-                                <td>{{ $Item->BiayaPrice }}</td>
                                 <td>{{ $Item->SAkhirUnit }}</td>
-                                <td>{{ $Item->SAkhirQuantity }}</td>
                                 <td>{{ $Item->SAkhirPrice }}</td>
                             </tr>
                             @endforeach
