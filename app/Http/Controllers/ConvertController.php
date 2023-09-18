@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Item;
 use App\Models\Pembelian;
 use App\Models\Convertbom;
 use App\Models\Convertpembelian;
@@ -16,8 +15,6 @@ use App\Imports\PembeliansImport;
 use App\Imports\PenerimaansImport;
 use App\Imports\PenjualansImport;
 use App\Models\Convertpenerimaan;
-use App\Models\Dprrckbom;
-use App\Models\Dprbom;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -121,9 +118,38 @@ class ConvertController extends Controller
 
             Excel::import(new PembeliansImport, request()->file('file'));
 
-            $seeder = new \Database\Seeders\PembelianSeeder();
-            $seeder->run();
+            $pembelians1 = Pembelian::select(
+                'pembelians.TANGGAL',
+                'pembelians.KD_CUS',
+                'pembelians.NAMAPELANGGAN',
+                'items.KODE_BARANG_SAGE',
+                'items.KODE_DESKRIPSI_BARANG_SAGE',
+                'items.BUYING_UNIT_SAGE',
+                Pembelian::raw('(pembelians.BANYAK * items.RUMUS_Untuk_Purchase) as QUANTITY'),
+                //Pembelian::raw('(pembelians.JUMLAH / ((pembelians.BANYAK *items. RUMUS_Untuk_Purchase) / items.RUMUS_untuk_BOM))as HARGA'),
+                'pembelians.JUMLAH'
+            )->join('items', 'pembelians.KD_BRG', '=', 'items.KODE_BARANG_PURCHASING')->get();
+            /* masuk kedalam database convert pembelian dari pembelian */
+            $datalaporanpembelian = [];
 
+            foreach ($pembelians1 as $pembelians12) {
+                if ($pembelians12->QUANTITY != 0) {
+                    $datalaporanpembelian = [
+                        'TANGGAL' => $pembelians12->TANGGAL,
+                        'KODE' => $pembelians12->KD_CUS,
+                        'NAMA' => $pembelians12->NAMAPELANGGAN,
+                        'KODE_BARANG_SAGE' => $pembelians12->KODE_BARANG_SAGE,
+                        'KODE_DESKRIPSI_BARANG_SAGE' => $pembelians12->KODE_DESKRIPSI_BARANG_SAGE,
+                        'STOKING_UNIT_BOM' => $pembelians12->BUYING_UNIT_SAGE,
+                        'Pembelian_Unit' => $pembelians12->QUANTITY,
+                        'Pembelian_Quantity' => $pembelians12->JUMLAH / $pembelians12->QUANTITY,
+                        'Pembelian_Price' => $pembelians12->JUMLAH
+                    ];
+                    Laporan::insert($datalaporanpembelian);
+                }
+            }
+
+            //foreach (array_chunk($datalaporanpembelian, count($datalaporanpembelian)) as $data) {;}
             /* 
                         Outlet::create([
                             'KODE' => 123,
@@ -290,8 +316,40 @@ class ConvertController extends Controller
             Excel::import(new PenerimaansImport, request()->file('file'));
             Convertbom::truncate();
 
-            $seeder = new \Database\Seeders\PenerimaanSeeder();
-            $seeder->run();
+            $penerimaanss = Penerimaan::join('items', 'items.KODE_BARANG_PURCHASING', '=', 'penerimaans.KD_BHN')
+                ->join('outlets', 'outlets.KODE', '=', 'penerimaans.PENERIMA')
+                ->select(
+                    'penerimaans.TANGGAL as TANGGAL',
+                    'penerimaans.PENERIMA as PENERIMA',
+                    'outlets.NAMA as ALAMAT',
+                    'penerimaans.DARI as DARI',
+                    'penerimaans.NAMAPELANGGAN as NAMAPELANGGAN',
+                    'items.KODE_BARANG_SAGE as KODE_BARANG_SAGE',
+                    'items.KODE_DESKRIPSI_BARANG_SAGE as KODE_DESKRIPSI_BARANG_SAGE',
+                    'items.BUYING_UNIT_SAGE as STOKING_UNIT_BOM',
+                    Penerimaan::raw('(penerimaans.QT_TERIMA * items.RUMUS_Untuk_Purchase) as QUANTITY'),
+                    'items.Harga'
+                )->groupBy('penerimaans.KD_BHN', 'penerimaans.PENERIMA', 'penerimaans.DARI', 'penerimaans.TANGGAL')->get();
+            // menjadi convert penerimaan 
+            $dataconvertpenerimaan = [];
+            foreach ($penerimaanss as $penerimaansss) {
+                if ($penerimaansss->QUANTITY != 0) {
+                    $dataconvertpenerimaan = [
+                        'TANGGAL' => $penerimaansss->TANGGAL,
+                        'PENERIMA' => $penerimaansss->PENERIMA,
+                        'NAMAPENERIMA' => $penerimaansss->ALAMAT,
+                        'DARI' => $penerimaansss->DARI,
+                        'NAMADARI' => $penerimaansss->NAMAPELANGGAN,
+                        'KODE_BARANG_SAGE' => $penerimaansss->KODE_BARANG_SAGE,
+                        'KODE_DESKRIPSI_BARANG_SAGE' => $penerimaansss->KODE_DESKRIPSI_BARANG_SAGE,
+                        'STOKING_UNIT_BOM' => $penerimaansss->STOKING_UNIT_BOM,
+                        'QUANTITY' => $penerimaansss->QUANTITY,
+                        'HARGA' => $penerimaansss->Harga,
+                        'JUMLAH' => $penerimaansss->QUANTITY * $penerimaansss->Harga
+                    ];
+                    Convertpenerimaan::insert($dataconvertpenerimaan);
+                }
+            }
 
             // dari dimasukan ke pengiriman
             $PenerimanSaldo = Convertpenerimaan::select(

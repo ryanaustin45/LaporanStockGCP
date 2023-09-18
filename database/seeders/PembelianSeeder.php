@@ -18,6 +18,8 @@ class PembelianSeeder extends Seeder
     public function run()
     {
         //
+        $longarray = 0;
+        $datalaporanpembelian = [];
         $pembelians1 = Pembelian::select(
             'pembelians.TANGGAL',
             'pembelians.KD_CUS',
@@ -30,8 +32,6 @@ class PembelianSeeder extends Seeder
             'pembelians.JUMLAH'
         )->join('items', 'pembelians.KD_BRG', '=', 'items.KODE_BARANG_PURCHASING')->get();
         /* masuk kedalam database convert pembelian dari pembelian */
-        $datalaporanpembelian = [];
-        $longarray = 0;
         foreach ($pembelians1 as $pembelians12) {
             if ($pembelians12->QUANTITY != 0) {
                 $datalaporanpembelian[] = [
