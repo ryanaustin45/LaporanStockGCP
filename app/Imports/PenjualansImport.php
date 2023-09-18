@@ -5,9 +5,10 @@ namespace App\Imports;
 use App\Models\Penjualan;
 use Maatwebsite\Excel\Concerns\ToModel;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 
-
-class PenjualansImport implements ToModel
+class PenjualansImport implements ToModel, WithChunkReading, ShouldQueue
 {
     /**
      * @param array $row
@@ -26,5 +27,13 @@ class PenjualansImport implements ToModel
             'Jumlah' => $row['6'],
             //
         ]);
+    }
+    public function batchSize(): int
+    {
+        return 10000;
+    }
+    public function chunkSize(): int
+    {
+        return 10000;
     }
 }

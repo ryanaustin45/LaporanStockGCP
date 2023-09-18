@@ -28,11 +28,6 @@
                                     </label>
                                     <input type="date" name="date" class="form-control">
                                 </div>
-                                <div class="col-md-3 pt-4 p-4"><label>
-                                        Outlet :
-                                    </label>
-                                    <input type="text" name="cari" placeholder="Masukan kode Outlet .." value="{{ old('cari') }}">
-                                </div>
                             </div>
                         </div>
                         <div class="col-md-3 pt-4 p-4">
@@ -77,6 +72,11 @@
                         </tbody>
                     </table>
                     <?php /* 
+                    <div class="col-md-3 pt-4 p-4"><label>
+                                        Outlet :
+                                    </label>
+                                    <input type="text" name="cari" placeholder="Masukan kode Outlet .." value="{{ old('cari') }}">
+                                </div>
                     <a class="btn btn-danger float-left" href="{{ route('hpp.export') }}">Export Laporan Excel</a>
                     */ ?>
 

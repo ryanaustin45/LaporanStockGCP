@@ -128,9 +128,10 @@ class ConvertController extends Controller
     
             Outlet::where('KODE', 123)->update(['NAMA' => 'Updated title']);*/
             Excel::import(new PembeliansImport, request()->file('file'));
+            $seeder = new \Database\Seeders\PembelianSeeder();
 
-            /* select untuk masuk kedalam database convert pembelian dari pembelian */
-            // sum error
+            $seeder->run();
+            /* 
             $pembelians1 = Pembelian::select(
                 'pembelians.TANGGAL',
                 'pembelians.KD_CUS',
@@ -142,7 +143,6 @@ class ConvertController extends Controller
                 //Pembelian::raw('(pembelians.JUMLAH / ((pembelians.BANYAK *items. RUMUS_Untuk_Purchase) / items.RUMUS_untuk_BOM))as HARGA'),
                 'pembelians.JUMLAH'
             )->join('items', 'pembelians.KD_BRG', '=', 'items.KODE_BARANG_PURCHASING')->get();
-            /* masuk kedalam database convert pembelian dari pembelian */
             $datalaporanpembelian = [];
             foreach ($pembelians1 as $pembelians12) {
                 if ($pembelians12->QUANTITY != 0) {
@@ -158,9 +158,11 @@ class ConvertController extends Controller
                         'Pembelian_Price' => $pembelians12->JUMLAH
                     ];
                     Laporan::insert($datalaporanpembelian);
-                }
+                }select untuk masuk kedalam database convert pembelian dari pembelian */
+            // sum error
 
-                /*
+
+            /*
                     $data1[] = [
                         'TANGGAL' => $pembelians12->TANGGAL,
                         'KODE' => $pembelians12->KD_CUS,
@@ -173,7 +175,7 @@ class ConvertController extends Controller
                         'JUMLAH' => $pembelians12->JUMLAH
 
                     ];*/
-            }
+
 
 
 

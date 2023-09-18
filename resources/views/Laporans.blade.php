@@ -33,11 +33,7 @@
                             <button type="submit" class="btn btn-primary">Submit Tanggal</button>
                         </div>
                     </form>
-                    <p>Cari Data Kode Outlet :</p>
-                    <form action="{{ route('laporans.cari') }}" method="GET">
-                        <input type="text" name="cari" placeholder="Masukan kode Outlet .." value="{{ old('cari') }}">
-                        <input type="submit" value="CARI">
-                    </form>
+
 
                     <table id="example1" class="table table-bordered table-responsive ">
                         <thead>
@@ -90,7 +86,12 @@
 
                     </table>
 
-                    <?php /* 
+                    <?php /* .
+                    <p>Cari Data Kode Outlet :</p>
+                    <form action="{{ route('laporans.cari') }}" method="GET">
+                        <input type="text" name="cari" placeholder="Masukan kode Outlet .." value="{{ old('cari') }}">
+                        <input type="submit" value="CARI">
+                    </form>
                     <a class="btn btn-danger float-left " href="{{ route('boms1.export') }}">Export Laporan Excel</a>
                     */ ?>
                 </div>

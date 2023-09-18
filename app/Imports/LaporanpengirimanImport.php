@@ -5,9 +5,11 @@ namespace App\Imports;
 use App\Models\Laporanpengiriman;
 use Maatwebsite\Excel\Concerns\ToModel;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 
 
-class LaporanpengirimanImport  implements ToModel
+class LaporanpengirimanImport  implements ToModel, WithChunkReading, ShouldQueue
 {
     /**
      * @param array $row
@@ -31,5 +33,9 @@ class LaporanpengirimanImport  implements ToModel
             'QT_TERIMA' => $row['9'],
             'QT_SISA' => $row['10'],
         ]);
+    }
+    public function chunkSize(): int
+    {
+        return 10000;
     }
 }
