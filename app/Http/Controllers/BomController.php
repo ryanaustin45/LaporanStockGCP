@@ -704,21 +704,16 @@ class BomController extends Controller
                         'TransferOut_Unit' => $LaporanSaldoAkhirs->pengiunit + $LaporanSaldoAkhirs->Bomunit,
                         'SAkhirUnit' => Laporanakhir::raw('IFNULL(TransferIn_Unit, 0) - IFNULL(TransferOut_Unit, 0)  '),
                     ]);
+
+                    Laporanakhir::where('KODE', '<>', 7301)->where('KODE', '<>', 7302)
+                        ->where('KODE', '<', 9000)
+                        ->where(Laporanakhir::raw('LEFT(KODE_BARANG_SAGE,2)'), '<>', '12')
+                        ->where(Laporanakhir::raw('LEFT(KODE_BARANG_SAGE,2)'), '<>', '11')
+                        ->update([
+                            'BiayaUnit' => Laporanakhir::raw('IFNULL(TransferIn_Unit, 0)'),
+                            'SAkhirUnit' => Laporanakhir::raw('(TransferIn_Unit - TransferOut_Unit) - TransferIn_Unit '),
+                        ]);
                 }
-            }
-
-
-            $UpdateBiayaLaporanasd = Laporanakhir::get();
-
-            foreach ($UpdateBiayaLaporanasd as $LaporanSaldoAwalsasd) {
-                Laporanakhir::where('KODE', '<>', 7301)->where('KODE', '<>', 7302)
-                    ->where('KODE', '<', 9000)
-                    ->where(Laporanakhir::raw('LEFT(KODE_BARANG_SAGE,2)'), '<>', '12')
-                    ->where(Laporanakhir::raw('LEFT(KODE_BARANG_SAGE,2)'), '<>', '11')
-                    ->update([
-                        'BiayaUnit' => Laporanakhir::raw('IFNULL(TransferIn_Unit, 0)'),
-                        'SAkhirUnit' => Laporanakhir::raw('(TransferIn_Unit - TransferOut_Unit) - TransferIn_Unit '),
-                    ]);
             }
 
             $pembelians1 = Pembelian::where('pembelians.JUMLAH', '<>', null)->where('pembelians.BANYAK', '<>', null)
