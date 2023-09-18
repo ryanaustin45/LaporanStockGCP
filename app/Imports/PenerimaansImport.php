@@ -5,8 +5,10 @@ namespace App\Imports;
 use App\Models\Penerimaan;
 use Maatwebsite\Excel\Concerns\ToModel;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 
-class PenerimaansImport implements ToModel
+
+class PenerimaansImport implements ToModel, WithChunkReading
 {
     /**
      * @param array $row
@@ -30,5 +32,9 @@ class PenerimaansImport implements ToModel
             'QT_SISA' => $row['11'],
             //
         ]);
+    }
+    public function chunkSize(): int
+    {
+        return 10000;
     }
 }

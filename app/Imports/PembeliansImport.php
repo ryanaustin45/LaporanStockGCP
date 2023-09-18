@@ -5,10 +5,9 @@ namespace App\Imports;
 use App\Models\Pembelian;
 use Maatwebsite\Excel\Concerns\ToModel;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 
-class PembeliansImport implements ToModel, WithChunkReading, ShouldQueue
+class PembeliansImport implements ToModel, WithChunkReading
 {
     /**
      * @param array $row

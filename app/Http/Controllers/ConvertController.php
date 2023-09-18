@@ -119,192 +119,161 @@ class ConvertController extends Controller
         if (Auth::check()) {
             Pembelian::truncate();
 
-            /*Outlet::create([
-                'KODE' => 123,
-                'NAMA' => "faker->slug",
-                'ALAMAT' => "faker->text",
-                'ADMIN_SPB' => "faker->content"
-            ]);
-    
-            Outlet::where('KODE', 123)->update(['NAMA' => 'Updated title']);*/
             Excel::import(new PembeliansImport, request()->file('file'));
+
             $seeder = new \Database\Seeders\PembelianSeeder();
-
             $seeder->run();
+
             /* 
-            $pembelians1 = Pembelian::select(
-                'pembelians.TANGGAL',
-                'pembelians.KD_CUS',
-                'pembelians.NAMAPELANGGAN',
-                'items.KODE_BARANG_SAGE',
-                'items.KODE_DESKRIPSI_BARANG_SAGE',
-                'items.STOKING_UNIT_BOM',
-                Pembelian::raw('(pembelians.BANYAK * items.RUMUS_Untuk_Purchase) / items.RUMUS_untuk_BOM as QUANTITY'),
-                //Pembelian::raw('(pembelians.JUMLAH / ((pembelians.BANYAK *items. RUMUS_Untuk_Purchase) / items.RUMUS_untuk_BOM))as HARGA'),
-                'pembelians.JUMLAH'
-            )->join('items', 'pembelians.KD_BRG', '=', 'items.KODE_BARANG_PURCHASING')->get();
-            $datalaporanpembelian = [];
-            foreach ($pembelians1 as $pembelians12) {
-                if ($pembelians12->QUANTITY != 0) {
-                    $datalaporanpembelian = [
-                        'TANGGAL' => $pembelians12->TANGGAL,
-                        'KODE' => $pembelians12->KD_CUS,
-                        'NAMA' => $pembelians12->NAMAPELANGGAN,
-                        'KODE_BARANG_SAGE' => $pembelians12->KODE_BARANG_SAGE,
-                        'KODE_DESKRIPSI_BARANG_SAGE' => $pembelians12->KODE_DESKRIPSI_BARANG_SAGE,
-                        'STOKING_UNIT_BOM' => $pembelians12->STOKING_UNIT_BOM,
-                        'Pembelian_Unit' => $pembelians12->QUANTITY,
-                        'Pembelian_Quantity' => $pembelians12->JUMLAH / $pembelians12->QUANTITY,
-                        'Pembelian_Price' => $pembelians12->JUMLAH
-                    ];
-                    Laporan::insert($datalaporanpembelian);
-                }select untuk masuk kedalam database convert pembelian dari pembelian */
-            // sum error
+                        Outlet::create([
+                            'KODE' => 123,
+                            'NAMA' => "faker->slug",
+                            'ALAMAT' => "faker->text",
+                            'ADMIN_SPB' => "faker->content"
+                        ]);
+                
+                        Outlet::where('KODE', 123)->update(['NAMA' => 'Updated title']);
+                        $pembelians1 = Pembelian::select(
+                            'pembelians.TANGGAL',
+                            'pembelians.KD_CUS',
+                            'pembelians.NAMAPELANGGAN',
+                            'items.KODE_BARANG_SAGE',
+                            'items.KODE_DESKRIPSI_BARANG_SAGE',
+                            'items.STOKING_UNIT_BOM',
+                            Pembelian::raw('(pembelians.BANYAK * items.RUMUS_Untuk_Purchase) / items.RUMUS_untuk_BOM as QUANTITY'),
+                            //Pembelian::raw('(pembelians.JUMLAH / ((pembelians.BANYAK *items. RUMUS_Untuk_Purchase) / items.RUMUS_untuk_BOM))as HARGA'),
+                            'pembelians.JUMLAH'
+                        )->join('items', 'pembelians.KD_BRG', '=', 'items.KODE_BARANG_PURCHASING')->get();
+                        $datalaporanpembelian = [];
+                        foreach ($pembelians1 as $pembelians12) {
+                            if ($pembelians12->QUANTITY != 0) {
+                                $datalaporanpembelian = [
+                                    'TANGGAL' => $pembelians12->TANGGAL,
+                                    'KODE' => $pembelians12->KD_CUS,
+                                    'NAMA' => $pembelians12->NAMAPELANGGAN,
+                                    'KODE_BARANG_SAGE' => $pembelians12->KODE_BARANG_SAGE,
+                                    'KODE_DESKRIPSI_BARANG_SAGE' => $pembelians12->KODE_DESKRIPSI_BARANG_SAGE,
+                                    'STOKING_UNIT_BOM' => $pembelians12->STOKING_UNIT_BOM,
+                                    'Pembelian_Unit' => $pembelians12->QUANTITY,
+                                    'Pembelian_Quantity' => $pembelians12->JUMLAH / $pembelians12->QUANTITY,
+                                    'Pembelian_Price' => $pembelians12->JUMLAH
+                                ];
+                                Laporan::insert($datalaporanpembelian);
+                            }select untuk masuk kedalam database convert pembelian dari pembelian
+                            $data1[] = [
+                                    'TANGGAL' => $pembelians12->TANGGAL,
+                                    'KODE' => $pembelians12->KD_CUS,
+                                    'NAMA' => $pembelians12->NAMAPELANGGAN,
+                                    'KODE_BARANG_SAGE' => $pembelians12->KODE_BARANG_SAGE,
+                                    'KODE_DESKRIPSI_BARANG_SAGE' => $pembelians12->KODE_DESKRIPSI_BARANG_SAGE,
+                                    'STOKING_UNIT_BOM' => $pembelians12->STOKING_UNIT_BOM,
+                                    'QUANTITY' => $pembelians12->QUANTITY,
+                                    'HARGA' => $pembelians12->HARGA,
+                                    'JUMLAH' => $pembelians12->JUMLAH
+                                                //bisa dihapus sisain insert buat item doang            Convertpembelian::insert($data1);
 
 
-            /*
-                    $data1[] = [
-                        'TANGGAL' => $pembelians12->TANGGAL,
-                        'KODE' => $pembelians12->KD_CUS,
-                        'NAMA' => $pembelians12->NAMAPELANGGAN,
-                        'KODE_BARANG_SAGE' => $pembelians12->KODE_BARANG_SAGE,
-                        'KODE_DESKRIPSI_BARANG_SAGE' => $pembelians12->KODE_DESKRIPSI_BARANG_SAGE,
-                        'STOKING_UNIT_BOM' => $pembelians12->STOKING_UNIT_BOM,
-                        'QUANTITY' => $pembelians12->QUANTITY,
-                        'HARGA' => $pembelians12->HARGA,
-                        'JUMLAH' => $pembelians12->JUMLAH
+                                ];
+                                nentuin harga if ada di dapur racik, pake selek yang bawah
+                        SELECT dprboms.NAMA_BAHAN, IF(dprboms.NAMA_BAHAN=dprrckboms.NAMA_BARANG, dprrckboms.HargaBarang, avg(convertpembelians.JUMLAH)/avg(convertpembelians.QUANTITY)) as tes FROM dprboms LEFT JOIN dprrckboms ON dprboms.NAMA_BAHAN = dprrckboms.NAMA_BARANG LEFT JOIN convertpembelians ON dprboms.NAMA_BAHAN = convertpembelians.KODE_DESKRIPSI_BARANG_SAGE GROUP BY dprboms.NAMA_BAHAN;
+                            /* select untuk memasukan nilai harga pada bom dapur racik dari pembelian 
+                        $dprrckbomhargabahan = Dprrckbom::select('dprrckboms.NAMA_BAHAN', Dprrckbom::raw('avg(convertpembelians.JUMLAH)/avg(convertpembelians.QUANTITY) as Harga'))->join(
+                            'convertpembelians',
+                            'dprrckboms.NAMA_BAHAN',
+                            '=',
+                            'convertpembelians.KODE_DESKRIPSI_BARANG_SAGE'
+                        )->groupBy('dprrckboms.NAMA_BAHAN')->get();
+                        foreach ($dprrckbomhargabahan as $dprrckbomhargabahans) {
+                            Dprrckbom::where('NAMA_BAHAN', $dprrckbomhargabahans->NAMA_BAHAN)
+                                ->update(['dprrckboms.Harga' => $dprrckbomhargabahans->Harga]);
+                        }
+                        $dprrckbomhargabarang = Dprrckbom::select(
+                            'dprrckboms.KODE_BARANG',
+                            Dprrckbom::raw('sum(dprrckboms.Harga) as Harga2')
+                        )->groupBy('dprrckboms.KODE_BARANG')->get();
+                        foreach ($dprrckbomhargabarang as $dprrckbomhargabarangs) {
+                            Dprrckbom::where('KODE_BARANG', $dprrckbomhargabarangs->KODE_BARANG)
+                                ->update(['dprrckboms.HargaBarang' => $dprrckbomhargabarangs->Harga2]);
+                        }
+                        $dprbom = Dprbom::select(
+                            'dprboms.NAMA_BAHAN',
+                            Dprbom::raw("IF(dprboms.NAMA_BAHAN = dprrckboms.NAMA_BARANG, dprrckboms.HargaBarang, 
+                        avg(convertpembelians.JUMLAH) / avg(convertpembelians.QUANTITY)) as Harga")
+                        )
+                            ->leftJoin(
+                                'dprrckboms',
+                                'dprboms.NAMA_BAHAN',
+                                '=',
+                                'dprrckboms.NAMA_BARANG'
+                            )->leftJoin('convertpembelians', 'dprboms.NAMA_BAHAN', '=', 'convertpembelians.KODE_DESKRIPSI_BARANG_SAGE')
+                            ->groupBy('dprboms.NAMA_BAHAN', 'dprrckboms.NAMA_BARANG')->get();
+                        foreach ($dprbom as $dprboms) {
+                            Dprbom::where('NAMA_BAHAN', $dprboms->NAMA_BAHAN)->update(['dprboms.Harga' => $dprboms->Harga]);
+                        }
+                        $dprbomhargabarang = Dprbom::select(
+                            'dprboms.KODE_BARANG',
+                            Dprbom::raw('sum(dprboms.Harga) as Harga2')
+                        )->groupBy('dprboms.KODE_BARANG')->get();
+                        foreach ($dprbomhargabarang as $dprbomhargabarangs) {
+                            Dprbom::where('KODE_BARANG', $dprbomhargabarangs->KODE_BARANG)->update(['dprboms.HargaBarang' => $dprbomhargabarangs->Harga2]);
+                        }
+                        $items1 = Item::select(
+                            'items.KODE_BARANG_SAGE',
+                            Item::raw('avg(convertpembelians.JUMLAH)/avg(convertpembelians.QUANTITY) as Harga')
+                        )->join(
+                            'convertpembelians',
+                            'items.KODE_BARANG_SAGE',
+                            '=',
+                            'convertpembelians.KODE_BARANG_SAGE'
+                        )->groupBy('items.KODE_BARANG_SAGE')->get();
+                        foreach ($items1 as $itemss1) {
+                            Item::where('KODE_BARANG_SAGE', $itemss1->KODE_BARANG_SAGE)->update(['items.Harga' => $itemss1->Harga]);
+                        }
 
-                    ];*/
+                        $items1123 = Item::select('dprrckboms.NAMA_BARANG', 'dprrckboms.HargaBarang')->join(
+                            'dprrckboms',
+                            'items.KODE_DESKRIPSI_BARANG_SAGE',
+                            '=',
+                            'dprrckboms.NAMA_BARANG'
+                        )->get();
+                        foreach ($items1123 as $itemss1123) {
+                            Item::where('KODE_DESKRIPSI_BARANG_SAGE', $itemss1123->NAMA_BARANG)->update(['items.Harga' => $itemss1123->HargaBarang]);
+                        }
 
+                        $items11234 = Item::select('dprboms.NAMA_BARANG', 'dprboms.HargaBarang')->join(
+                            'dprboms',
+                            'items.KODE_DESKRIPSI_BARANG_SAGE',
+                            '=',
+                            'dprboms.NAMA_BARANG'
+                        )->get();
 
+                        foreach ($items11234 as $itemss11234) {
+                            Item::where('KODE_DESKRIPSI_BARANG_SAGE', $itemss11234->NAMA_BARANG)->update(['items.Harga' => $itemss11234->HargaBarang]);
+                        }
+                        SELECT IF(dprboms.NAMA_BAHAN=dprrckboms.NAMA_BARANG, "MORE", "LESS")
+                        FROM dprboms; 
+                        more = SELECT dprrckboms.NAMA_BAHAN,dprrckboms.Harga,dprrckboms.NAMA_BARANG,sum(dprrckboms.Harga) FROM `dprrckboms` GROUP BY dprrckboms.NAMA_BARANG as harga;
+                        less = else langsung dari convert pembelian avg(convertpembelians.JUMLAH)/avg(convertpembelians.QUANTITY) as Harga
+                        
+                        Dprbom::raw("'IF'('dprboms.NAMA_BAHAN' '=' 'dprrckboms.NAMA_BARANG', 'dprrckboms.HargaBarang', ''avg'('convertpembelians.JUMLAH')' '/' ''avg'('convertpembelians.QUANTITY')') as Harga")
+                        $PembelianSaldo = Convertpembelian::select(
+                            'TANGGAL',
+                            'KODE',
+                            'NAMA',
+                            'KODE_BARANG_SAGE',
+                            'KODE_DESKRIPSI_BARANG_SAGE',
+                            'STOKING_UNIT_BOM',
+                            Convertpembelian::raw('sum(QUANTITY) as QUANTITY2'),
+                            Convertpembelian::raw('sum(JUMLAH) as JUMLAH2'),
+                        )->groupBy(
+                            'TANGGAL',
+                            'KODE',
+                            'KODE_BARANG_SAGE',
+                        )->get();
 
-
-
-            //bisa dihapus sisain insert buat item doang            Convertpembelian::insert($data1);
-
-
-
-            /*nentuin harga if ada di dapur racik, pake selek yang bawah
-            SELECT dprboms.NAMA_BAHAN, IF(dprboms.NAMA_BAHAN=dprrckboms.NAMA_BARANG, dprrckboms.HargaBarang, avg(convertpembelians.JUMLAH)/avg(convertpembelians.QUANTITY)) as tes FROM dprboms LEFT JOIN dprrckboms ON dprboms.NAMA_BAHAN = dprrckboms.NAMA_BARANG LEFT JOIN convertpembelians ON dprboms.NAMA_BAHAN = convertpembelians.KODE_DESKRIPSI_BARANG_SAGE GROUP BY dprboms.NAMA_BAHAN;
-                 /* select untuk memasukan nilai harga pada bom dapur racik dari pembelian 
-            $dprrckbomhargabahan = Dprrckbom::select('dprrckboms.NAMA_BAHAN', Dprrckbom::raw('avg(convertpembelians.JUMLAH)/avg(convertpembelians.QUANTITY) as Harga'))->join(
-                'convertpembelians',
-                'dprrckboms.NAMA_BAHAN',
-                '=',
-                'convertpembelians.KODE_DESKRIPSI_BARANG_SAGE'
-            )->groupBy('dprrckboms.NAMA_BAHAN')->get();
-
-            /*memasukan nilai harga pada bahan baku bom dapur racik dari pembelian 
-            foreach ($dprrckbomhargabahan as $dprrckbomhargabahans) {
-                Dprrckbom::where('NAMA_BAHAN', $dprrckbomhargabahans->NAMA_BAHAN)
-                    ->update(['dprrckboms.Harga' => $dprrckbomhargabahans->Harga]);
-            }
-
-            /*memasukan nilai harga pada bahan jadi bom dapur racik dari penjunmlahan bahan baku dapur racik 
-            $dprrckbomhargabarang = Dprrckbom::select(
-                'dprrckboms.KODE_BARANG',
-                Dprrckbom::raw('sum(dprrckboms.Harga) as Harga2')
-            )->groupBy('dprrckboms.KODE_BARANG')->get();
-            foreach ($dprrckbomhargabarang as $dprrckbomhargabarangs) {
-                Dprrckbom::where('KODE_BARANG', $dprrckbomhargabarangs->KODE_BARANG)
-                    ->update(['dprrckboms.HargaBarang' => $dprrckbomhargabarangs->Harga2]);
-            }
-
-            /* select untuk memasukan nilai harga pada bom dapur pusat dari pembelian 
-            $dprbom = Dprbom::select(
-                'dprboms.NAMA_BAHAN',
-                Dprbom::raw("IF(dprboms.NAMA_BAHAN = dprrckboms.NAMA_BARANG, dprrckboms.HargaBarang, 
-            avg(convertpembelians.JUMLAH) / avg(convertpembelians.QUANTITY)) as Harga")
-            )
-                ->leftJoin(
-                    'dprrckboms',
-                    'dprboms.NAMA_BAHAN',
-                    '=',
-                    'dprrckboms.NAMA_BARANG'
-                )->leftJoin('convertpembelians', 'dprboms.NAMA_BAHAN', '=', 'convertpembelians.KODE_DESKRIPSI_BARANG_SAGE')
-                ->groupBy('dprboms.NAMA_BAHAN', 'dprrckboms.NAMA_BARANG')->get();
-
-            /*memasukan nilai harga pada bahan baku bom dapur pusat dari bahan jadi dapur racik 
-            foreach ($dprbom as $dprboms) {
-                Dprbom::where('NAMA_BAHAN', $dprboms->NAMA_BAHAN)->update(['dprboms.Harga' => $dprboms->Harga]);
-            }
-            $dprbomhargabarang = Dprbom::select(
-                'dprboms.KODE_BARANG',
-                Dprbom::raw('sum(dprboms.Harga) as Harga2')
-            )->groupBy('dprboms.KODE_BARANG')->get();
-
-            /*memasukan nilai harga pada bahan jadi bom dapur pusat dari penjunmlahan bahan baku dapur pusat 
-            foreach ($dprbomhargabarang as $dprbomhargabarangs) {
-                Dprbom::where('KODE_BARANG', $dprbomhargabarangs->KODE_BARANG)->update(['dprboms.HargaBarang' => $dprbomhargabarangs->Harga2]);
-            }
-
-            /* select untuk memasukan nilai harga pada item dari pembelian 
-            $items1 = Item::select(
-                'items.KODE_BARANG_SAGE',
-                Item::raw('avg(convertpembelians.JUMLAH)/avg(convertpembelians.QUANTITY) as Harga')
-            )->join(
-                'convertpembelians',
-                'items.KODE_BARANG_SAGE',
-                '=',
-                'convertpembelians.KODE_BARANG_SAGE'
-            )->groupBy('items.KODE_BARANG_SAGE')->get();
-
-            /*memasukan nilai harga pada item dari pembelian 
-            foreach ($items1 as $itemss1) {
-                Item::where('KODE_BARANG_SAGE', $itemss1->KODE_BARANG_SAGE)->update(['items.Harga' => $itemss1->Harga]);
-            }
-
-            /* select untuk memasukan nilai harga pada item dari dapur racik 
-            $items1123 = Item::select('dprrckboms.NAMA_BARANG', 'dprrckboms.HargaBarang')->join(
-                'dprrckboms',
-                'items.KODE_DESKRIPSI_BARANG_SAGE',
-                '=',
-                'dprrckboms.NAMA_BARANG'
-            )->get();
-
-            /*memasukan nilai harga pada item dari dapur racik 
-            foreach ($items1123 as $itemss1123) {
-                Item::where('KODE_DESKRIPSI_BARANG_SAGE', $itemss1123->NAMA_BARANG)->update(['items.Harga' => $itemss1123->HargaBarang]);
-            }
-
-            /* select untuk memasukan nilai harga pada item dari dapur pusat 
-            $items11234 = Item::select('dprboms.NAMA_BARANG', 'dprboms.HargaBarang')->join(
-                'dprboms',
-                'items.KODE_DESKRIPSI_BARANG_SAGE',
-                '=',
-                'dprboms.NAMA_BARANG'
-            )->get();
-
-            /*memasukan nilai harga pada item dari dapur pusat 
-            foreach ($items11234 as $itemss11234) {
-                Item::where('KODE_DESKRIPSI_BARANG_SAGE', $itemss11234->NAMA_BARANG)->update(['items.Harga' => $itemss11234->HargaBarang]);
-            }
-            SELECT IF(dprboms.NAMA_BAHAN=dprrckboms.NAMA_BARANG, "MORE", "LESS")
-            FROM dprboms; 
-            more = SELECT dprrckboms.NAMA_BAHAN,dprrckboms.Harga,dprrckboms.NAMA_BARANG,sum(dprrckboms.Harga) FROM `dprrckboms` GROUP BY dprrckboms.NAMA_BARANG as harga;
-            less = else langsung dari convert pembelian avg(convertpembelians.JUMLAH)/avg(convertpembelians.QUANTITY) as Harga
-            
-            Dprbom::raw("'IF'('dprboms.NAMA_BAHAN' '=' 'dprrckboms.NAMA_BARANG', 'dprrckboms.HargaBarang', ''avg'('convertpembelians.JUMLAH')' '/' ''avg'('convertpembelians.QUANTITY')') as Harga")
-            $PembelianSaldo = Convertpembelian::select(
-                'TANGGAL',
-                'KODE',
-                'NAMA',
-                'KODE_BARANG_SAGE',
-                'KODE_DESKRIPSI_BARANG_SAGE',
-                'STOKING_UNIT_BOM',
-                Convertpembelian::raw('sum(QUANTITY) as QUANTITY2'),
-                Convertpembelian::raw('sum(JUMLAH) as JUMLAH2'),
-            )->groupBy(
-                'TANGGAL',
-                'KODE',
-                'KODE_BARANG_SAGE',
-            )->get();
-
-            foreach ($PembelianSaldo as $PembelianSaldos) {
-            }
-            
+                        foreach ($PembelianSaldo as $PembelianSaldos) {
+                        }
             */
-
 
             return back()->with('success', 'Berhasil Upload');
             //response()->json(['success' => 'file berhasil di upload']);
@@ -321,40 +290,8 @@ class ConvertController extends Controller
             Excel::import(new PenerimaansImport, request()->file('file'));
             Convertbom::truncate();
 
-            $penerimaanss = Penerimaan::join('items', 'items.KODE_BARANG_PURCHASING', '=', 'penerimaans.KD_BHN')
-                ->join('outlets', 'outlets.KODE', '=', 'penerimaans.PENERIMA')
-                ->select(
-                    'penerimaans.TANGGAL as TANGGAL',
-                    'penerimaans.PENERIMA as PENERIMA',
-                    'outlets.NAMA as ALAMAT',
-                    'penerimaans.DARI as DARI',
-                    'penerimaans.NAMAPELANGGAN as NAMAPELANGGAN',
-                    'items.KODE_BARANG_SAGE as KODE_BARANG_SAGE',
-                    'items.KODE_DESKRIPSI_BARANG_SAGE as KODE_DESKRIPSI_BARANG_SAGE',
-                    'items.STOKING_UNIT_BOM as STOKING_UNIT_BOM',
-                    Penerimaan::raw('(penerimaans.QT_TERIMA * items.RUMUS_Untuk_Purchase) / items.RUMUS_untuk_BOM as QUANTITY'),
-                    'items.Harga'
-                )->groupBy('penerimaans.KD_BHN', 'penerimaans.PENERIMA', 'penerimaans.DARI', 'penerimaans.TANGGAL')->get();
-            // menjadi convert penerimaan 
-            $dataconvertpenerimaan = [];
-            foreach ($penerimaanss as $penerimaansss) {
-                if ($penerimaansss->QUANTITY != 0) {
-                    $dataconvertpenerimaan = [
-                        'TANGGAL' => $penerimaansss->TANGGAL,
-                        'PENERIMA' => $penerimaansss->PENERIMA,
-                        'NAMAPENERIMA' => $penerimaansss->ALAMAT,
-                        'DARI' => $penerimaansss->DARI,
-                        'NAMADARI' => $penerimaansss->NAMAPELANGGAN,
-                        'KODE_BARANG_SAGE' => $penerimaansss->KODE_BARANG_SAGE,
-                        'KODE_DESKRIPSI_BARANG_SAGE' => $penerimaansss->KODE_DESKRIPSI_BARANG_SAGE,
-                        'STOKING_UNIT_BOM' => $penerimaansss->STOKING_UNIT_BOM,
-                        'QUANTITY' => $penerimaansss->QUANTITY,
-                        'HARGA' => $penerimaansss->Harga,
-                        'JUMLAH' => $penerimaansss->QUANTITY * $penerimaansss->Harga
-                    ];
-                    Convertpenerimaan::insert($dataconvertpenerimaan);
-                }
-            }
+            $seeder = new \Database\Seeders\PenerimaanSeeder();
+            $seeder->run();
 
             // dari dimasukan ke pengiriman
             $PenerimanSaldo = Convertpenerimaan::select(

@@ -24,8 +24,8 @@ class PembelianSeeder extends Seeder
             'pembelians.NAMAPELANGGAN',
             'items.KODE_BARANG_SAGE',
             'items.KODE_DESKRIPSI_BARANG_SAGE',
-            'items.STOKING_UNIT_BOM',
-            Pembelian::raw('(pembelians.BANYAK * items.RUMUS_Untuk_Purchase) / items.RUMUS_untuk_BOM as QUANTITY'),
+            'items.BUYING_UNIT_SAGE',
+            Pembelian::raw('(pembelians.BANYAK * items.RUMUS_Untuk_Purchase) as QUANTITY'),
             //Pembelian::raw('(pembelians.JUMLAH / ((pembelians.BANYAK *items. RUMUS_Untuk_Purchase) / items.RUMUS_untuk_BOM))as HARGA'),
             'pembelians.JUMLAH'
         )->join('items', 'pembelians.KD_BRG', '=', 'items.KODE_BARANG_PURCHASING')->get();
@@ -40,7 +40,7 @@ class PembelianSeeder extends Seeder
                     'NAMA' => $pembelians12->NAMAPELANGGAN,
                     'KODE_BARANG_SAGE' => $pembelians12->KODE_BARANG_SAGE,
                     'KODE_DESKRIPSI_BARANG_SAGE' => $pembelians12->KODE_DESKRIPSI_BARANG_SAGE,
-                    'STOKING_UNIT_BOM' => $pembelians12->STOKING_UNIT_BOM,
+                    'STOKING_UNIT_BOM' => $pembelians12->BUYING_UNIT_SAGE,
                     'Pembelian_Unit' => $pembelians12->QUANTITY,
                     'Pembelian_Quantity' => $pembelians12->JUMLAH / $pembelians12->QUANTITY,
                     'Pembelian_Price' => $pembelians12->JUMLAH
