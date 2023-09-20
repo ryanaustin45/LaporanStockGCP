@@ -39,8 +39,9 @@
                         <thead>
                             <tr>
                                 <th> Kode Outlet </th>
-                                <th> Nama Item</th>
+                                <th> Nama Outlet</th>
                                 <th> Kode Item</th>
+                                <th> Nama Item</th>
                                 <th> Satuan</th>
                                 <th> Harga</th>
 
@@ -64,8 +65,10 @@
                             @foreach($laporanakhirview as $Item)
                             <tr>
                                 <td>{{ $Item->KODE }}</td>
-                                <td>{{ $Item->KODE_DESKRIPSI_BARANG_SAGE }}</td>
+                                <td>{{ $Item->NAMA }}</td>
+
                                 <td>{{ $Item->KODE_BARANG_SAGE }}</td>
+                                <td>{{ $Item->KODE_DESKRIPSI_BARANG_SAGE }}</td>
 
                                 <td>{{ $Item->STOKING_UNIT_BOM }}</td>
                                 <td>{{ $Item->SAwalQuantity }}</td>
