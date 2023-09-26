@@ -55,7 +55,41 @@
                         </p>
                     </a>
                 </li>
-
+                <li class="nav-item"">
+                    <a href=" /laporanpembelian" class="nav-link">
+                    <i class="nav-icon fas fa-copy"></i>
+                    <p>
+                        Laporan Pembelian</p>
+                    </a>
+                </li>
+                <li class="nav-item"">
+                    <a href=" /rekappembelian" class="nav-link">
+                    <i class="nav-icon fas fa-copy"></i>
+                    <p>
+                        Rekap Pembelian</p>
+                    </a>
+                </li>
+                <li class="nav-item"">
+                    <a href=" /laporanbiaya" class="nav-link">
+                    <i class="nav-icon fas fa-copy"></i>
+                    <p>
+                        Laporan Biaya</p>
+                    </a>
+                </li>
+                <li class="nav-item"">
+                    <a href=" /rekapbiaya" class="nav-link">
+                    <i class="nav-icon fas fa-copy"></i>
+                    <p>
+                        Rekap Biaya</p>
+                    </a>
+                </li>
+                <li class="nav-item"">
+                    <a href=" /rekapcogs" class="nav-link">
+                    <i class="nav-icon fas fa-copy"></i>
+                    <p>
+                        Rekap COGS</p>
+                    </a>
+                </li>
 
                 <li class="nav-item"">
                     <a href=" /laporan" class="nav-link">

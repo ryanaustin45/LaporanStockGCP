@@ -62,6 +62,16 @@ Route::controller(BomController::class)->group(function () {
     Route::get('laporans-tanggal', 'LaporanTanggal')->name('laporans.tanggal');
     Route::get('laporans-tanggaldua', 'LaporanTanggaldua')->name('laporans.tanggaldua');
     Route::get('Laporanhpps-tanggal', 'Laporanhppstanggal')->name('Laporanhpps.tanggal');
+    Route::get('laporanpembelian', 'laporanpembelian');
+    Route::get('rekappembelian', 'rekappembelian');
+    Route::get('laporanbiaya', 'laporanbiaya');
+    Route::get('rekapbiaya', 'rekapbiaya');
+    Route::get('rekapcogs', 'rekapcogs');
+    Route::get('laporanspembelian-tanggal', 'laporanpembeliantanggal')->name('laporanspembelian.tanggal');
+    Route::get('rekappembelian-tanggal', 'rekappembeliantanggal')->name('rekappembelian.tanggal');
+    Route::get('biayalaporan-tanggal', 'biayalaporantanggal')->name('biayalaporan.tanggal');
+    Route::get('rekapBiaya.tanggal', 'rekapBiayatanggal')->name('rekapBiaya.tanggal');
+    Route::get('rekapcogs-tanggal', 'rekapcogstanggal')->name('rekapcogs.tanggal');
 });
 
 Route::controller(PerbandinganController::class)->group(function () {

@@ -124,7 +124,7 @@ class ConvertController extends Controller
                 'pembelians.NAMAPELANGGAN',
                 'items.KODE_BARANG_SAGE',
                 'items.KODE_DESKRIPSI_BARANG_SAGE',
-                'items.BUYING_UNIT_SAGE',
+                'items.STOKING_UNIT_BOM',
                 Pembelian::raw('round((pembelians.BANYAK * items.RUMUS_Untuk_Purchase) / items.RUMUS_untuk_BOM,2) as QUANTITY'),
                 //Pembelian::raw('(pembelians.JUMLAH / ((pembelians.BANYAK *items. RUMUS_Untuk_Purchase) / items.RUMUS_untuk_BOM))as HARGA'),
                 'pembelians.JUMLAH'
@@ -140,7 +140,7 @@ class ConvertController extends Controller
                         'NAMA' => $pembelians12->NAMAPELANGGAN,
                         'KODE_BARANG_SAGE' => $pembelians12->KODE_BARANG_SAGE,
                         'KODE_DESKRIPSI_BARANG_SAGE' => $pembelians12->KODE_DESKRIPSI_BARANG_SAGE,
-                        'STOKING_UNIT_BOM' => $pembelians12->BUYING_UNIT_SAGE,
+                        'STOKING_UNIT_BOM' => $pembelians12->STOKING_UNIT_BOM,
                         'Pembelian_Unit' => $pembelians12->QUANTITY,
                         'Pembelian_Quantity' => $pembelians12->JUMLAH / $pembelians12->QUANTITY,
                         'Pembelian_Price' => $pembelians12->JUMLAH
@@ -326,7 +326,7 @@ class ConvertController extends Controller
                     'penerimaans.NAMAPELANGGAN as NAMAPELANGGAN',
                     'items.KODE_BARANG_SAGE as KODE_BARANG_SAGE',
                     'items.KODE_DESKRIPSI_BARANG_SAGE as KODE_DESKRIPSI_BARANG_SAGE',
-                    'items.BUYING_UNIT_SAGE as STOKING_UNIT_BOM',
+                    'items.STOKING_UNIT_BOM as STOKING_UNIT_BOM',
                     Penerimaan::raw('round((penerimaans.QT_TERIMA * items.RUMUS_Untuk_Purchase) / items.RUMUS_untuk_BOM,2) as QUANTITY'),
                     'items.Harga'
                 )->groupBy('penerimaans.KD_BHN', 'penerimaans.PENERIMA', 'penerimaans.DARI', 'penerimaans.TANGGAL')->get();
@@ -386,9 +386,17 @@ class ConvertController extends Controller
             // menjadi convert bomdpr 
             $Boms1 = Convertpenerimaan::join(
                 'dprboms',
-                Convertpenerimaan::raw('RIGHT(dprboms.KODE_BARANG, 11)'),
-                '=',
-                'convertpenerimaans.KODE_BARANG_SAGE'
+                function ($join) {
+                    $join->on(
+                        Convertpenerimaan::raw('RIGHT(dprboms.KODE_BARANG, 11)'),
+                        '=',
+                        'convertpenerimaans.KODE_BARANG_SAGE'
+                    )->on(
+                        Convertpenerimaan::raw('LEFT(dprboms.KODE_BARANG, 4)'),
+                        '=',
+                        'convertpenerimaans.DARI'
+                    );
+                }
             )->select(
                 'convertpenerimaans.TANGGAL',
                 'convertpenerimaans.DARI',
@@ -590,12 +598,19 @@ class ConvertController extends Controller
             Excel::import(new PenjualansImport, request()->file('file'));
             Convertbom::truncate();
 
-
             $Boms1 = Penjualan::join(
                 'boms',
-                Penjualan::raw('RIGHT(boms.KODE_BARANG, 13)'),
-                '=',
-                'penjualans.KODE_OUTLET'
+                function ($join) {
+                    $join->on(
+                        Penjualan::raw('RIGHT(boms.KODE_BARANG, 13)'),
+                        '=',
+                        'penjualans.KODE_BARANG'
+                    )->on(
+                        Penjualan::raw('LEFT(boms.KODE_BARANG, 4)'),
+                        '=',
+                        'penjualans.KODE_OUTLET'
+                    );
+                }
             )->select(
                 'penjualans.TANGGAL',
                 'penjualans.KODE_OUTLET',
